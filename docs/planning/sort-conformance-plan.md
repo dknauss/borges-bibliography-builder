@@ -90,6 +90,10 @@ A new test file runs a curated fixture set through `sortCitations` for every reg
 
 The test itself is the deliverable. No additional manual QA required beyond reviewing the initial snapshot for sanity.
 
+### Baseline reference
+
+The committed baseline snapshot for this requirement is `src/lib/__snapshots__/sorter.snapshot.test.js.snap`, generated from the reusable fixture set in `src/lib/__fixtures__/sort-fixtures.js`. The existing CI unit-test step (`npm test -- --runInBand --silent`) runs this snapshot suite on every pull request.
+
 ### Definition of done
 
 Snapshots committed; CI green; review confirmation that snapshot diffs are visible and meaningful in subsequent PRs.
