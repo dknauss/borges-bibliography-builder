@@ -207,6 +207,10 @@ export default function Edit({ attributes, setAttributes }) {
 	}, [citations]);
 
 	useEffect(() => {
+		if (listStyleDefinition.family === 'numeric') {
+			return;
+		}
+
 		const sortedIds = sortedCitations.map((citation) => citation.id);
 		const currentIds = citations.map((citation) => citation.id);
 
@@ -219,7 +223,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 		citationsRef.current = sortedCitations;
 		setAttributes({ citations: sortedCitations });
-	}, [citations, setAttributes, sortedCitations]);
+	}, [citations, listStyleDefinition.family, setAttributes, sortedCitations]);
 
 	const updatePasteInput = useCallback(
 		(nextValue, { syncDom = false } = {}) => {

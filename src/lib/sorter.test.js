@@ -329,4 +329,90 @@ describe('sortCitations', () => {
 		expect(sortCitations(single)).toEqual(single);
 		expect(sortCitations([])).toEqual([]);
 	});
+
+	it('preserves input order for IEEE numeric style', () => {
+		const citations = [
+			createCitation({
+				id: 'smith',
+				family: 'Smith',
+				year: 2024,
+				title: 'Smith Study',
+			}),
+			createCitation({
+				id: 'adams',
+				family: 'Adams',
+				year: 2019,
+				title: 'Adams Study',
+			}),
+			createCitation({
+				id: 'zulu',
+				family: 'Zulu',
+				year: 2018,
+				title: 'Zulu Study',
+			}),
+			createCitation({
+				id: 'brown',
+				family: 'Brown',
+				year: 2021,
+				title: 'Brown Study',
+			}),
+			createCitation({
+				id: 'lee',
+				family: 'Lee',
+				year: 2020,
+				title: 'Lee Study',
+			}),
+		];
+
+		expect(sortCitations(citations, 'ieee').map((c) => c.id)).toEqual([
+			'smith',
+			'adams',
+			'zulu',
+			'brown',
+			'lee',
+		]);
+	});
+
+	it('preserves input order for Vancouver numeric style', () => {
+		const citations = [
+			createCitation({
+				id: 'three',
+				family: 'Zulu',
+				year: 2018,
+				title: 'Zulu Study',
+			}),
+			createCitation({
+				id: 'one',
+				family: 'Adams',
+				year: 2024,
+				title: 'Adams Study',
+			}),
+			createCitation({
+				id: 'five',
+				family: 'Lee',
+				year: 2019,
+				title: 'Lee Study',
+			}),
+			createCitation({
+				id: 'two',
+				family: 'Brown',
+				year: 2021,
+				title: 'Brown Study',
+			}),
+			createCitation({
+				id: 'four',
+				family: 'Smith',
+				year: 2020,
+				title: 'Smith Study',
+			}),
+		];
+
+		expect(sortCitations(citations, 'vancouver').map((c) => c.id)).toEqual([
+			'three',
+			'one',
+			'five',
+			'two',
+			'four',
+		]);
+	});
 });

@@ -328,21 +328,60 @@ jest.mock('./lib/formatting', () => ({
 		},
 	]),
 	getStyleDefinition: jest.fn((styleKey) => {
-		const labels = {
-			'chicago-notes-bibliography': 'Chicago Notes-Bibliography',
-			'chicago-author-date': 'Chicago Author-Date',
-			'apa-7': 'APA 7',
-			'mla-9': 'MLA 9',
-			harvard: 'Harvard',
-			ieee: 'IEEE',
-			vancouver: 'Vancouver',
-			oscola: 'OSCOLA',
-			abnt: 'ABNT',
+		const definitions = {
+			'chicago-notes-bibliography': {
+				label: 'Chicago Notes-Bibliography',
+				family: 'notes',
+				listType: 'ul',
+			},
+			'chicago-author-date': {
+				label: 'Chicago Author-Date',
+				family: 'author-date',
+				listType: 'ul',
+			},
+			'apa-7': {
+				label: 'APA 7',
+				family: 'author-date',
+				listType: 'ul',
+			},
+			'mla-9': {
+				label: 'MLA 9',
+				family: 'author-date',
+				listType: 'ul',
+			},
+			harvard: {
+				label: 'Harvard',
+				family: 'author-date',
+				listType: 'ul',
+			},
+			ieee: {
+				label: 'IEEE',
+				family: 'numeric',
+				listType: 'ol',
+			},
+			vancouver: {
+				label: 'Vancouver',
+				family: 'numeric',
+				listType: 'ol',
+			},
+			oscola: {
+				label: 'OSCOLA',
+				family: 'notes',
+				listType: 'ul',
+			},
+			abnt: {
+				label: 'ABNT',
+				family: 'author-date',
+				listType: 'ul',
+			},
 		};
+
+		const resolved =
+			definitions[styleKey] || definitions['chicago-notes-bibliography'];
 
 		return {
 			key: styleKey,
-			label: labels[styleKey] || 'Chicago Notes-Bibliography',
+			...resolved,
 		};
 	}),
 	getSelectableStyles: jest.fn(() => [
@@ -712,6 +751,81 @@ describe('Edit focus management', () => {
 			'The Chicago Guide to Fact-Checking'
 		);
 		expect(entries[1]).toHaveTextContent('The Book by Design');
+	});
+
+	it('preserves numeric-family order on load and re-sorts when switching to author-date', async () => {
+		render(
+			<EditHarness
+				initialStyle="ieee"
+				initialCitations={[
+					createCitation({
+						id: 'zulu',
+						family: 'Zulu',
+						year: 2024,
+						title: 'Zulu citation',
+					}),
+					createCitation({
+						id: 'alpha',
+						family: 'Alpha',
+						year: 2023,
+						title: 'Alpha citation',
+					}),
+				]}
+			/>
+		);
+
+		let entries = screen.getAllByRole('listitem');
+		expect(entries[0]).toHaveTextContent('Zulu citation');
+		expect(entries[1]).toHaveTextContent('Alpha citation');
+
+		await userEvent.selectOptions(
+			screen.getByLabelText('Citation Style'),
+			'chicago-author-date'
+		);
+
+		await waitFor(() => {
+			entries = screen.getAllByRole('listitem');
+			expect(entries[0]).toHaveTextContent('Alpha citation');
+			expect(entries[1]).toHaveTextContent('Zulu citation');
+		});
+	});
+
+	it('does not re-sort when switching from author-date to numeric', async () => {
+		render(
+			<EditHarness
+				initialStyle="chicago-author-date"
+				initialCitations={[
+					createCitation({
+						id: 'a',
+						family: 'Alpha',
+						year: 2024,
+						title: 'Alpha citation',
+					}),
+					createCitation({
+						id: 'z',
+						family: 'Zulu',
+						year: 2020,
+						title: 'Zulu citation',
+					}),
+				]}
+			/>
+		);
+
+		const beforeSwitch = screen
+			.getAllByRole('listitem')
+			.map((entry) => entry.textContent);
+
+		await userEvent.selectOptions(
+			screen.getByLabelText('Citation Style'),
+			'ieee'
+		);
+
+		await waitFor(() => {
+			const afterSwitch = screen
+				.getAllByRole('listitem')
+				.map((entry) => entry.textContent);
+			expect(afterSwitch).toEqual(beforeSwitch);
+		});
 	});
 
 	it('allows selecting APA style before any citations are added', async () => {
