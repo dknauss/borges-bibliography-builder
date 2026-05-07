@@ -31,6 +31,7 @@ import { CitationEntryBody } from './components/citation-entry-body';
 import { useBlockNotices } from './hooks/use-block-notices';
 import { useCitationEditorState } from './hooks/use-citation-editor-state';
 import { useEntryFocus } from './hooks/use-entry-focus';
+import { useCitationReorder } from './hooks/use-citation-reorder';
 import { copyTextToClipboard } from './lib/clipboard';
 import {
 	getDisplayText,
@@ -154,6 +155,7 @@ export default function Edit({ attributes, setAttributes }) {
 	const blockProps = useBlockProps();
 	const headingPlaceholder = getHeadingPlaceholder(citationStyle);
 	const listStyleDefinition = getStyleDefinition(citationStyle);
+	const isNumericFamily = listStyleDefinition.family === 'numeric';
 	const ListTag = getListSemantics(citationStyle);
 	const listClassName = `bibliography-builder-list bibliography-builder-list-${
 		listStyleDefinition.listType === 'ol' ? 'numeric' : 'unordered'
@@ -201,13 +203,19 @@ export default function Edit({ attributes, setAttributes }) {
 		queueFocus,
 		setAttributes,
 	});
+	const { moveCitationDown, moveCitationUp } = useCitationReorder({
+		announce,
+		citationsRef,
+		queueFocus,
+		setAttributes,
+	});
 
 	useEffect(() => {
 		citationsRef.current = citations;
 	}, [citations]);
 
 	useEffect(() => {
-		if (listStyleDefinition.family === 'numeric') {
+		if (isNumericFamily) {
 			return;
 		}
 
@@ -223,7 +231,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 		citationsRef.current = sortedCitations;
 		setAttributes({ citations: sortedCitations });
-	}, [citations, listStyleDefinition.family, setAttributes, sortedCitations]);
+	}, [citations, isNumericFamily, setAttributes, sortedCitations]);
 
 	const updatePasteInput = useCallback(
 		(nextValue, { syncDom = false } = {}) => {
@@ -672,6 +680,32 @@ export default function Edit({ attributes, setAttributes }) {
 		]
 	);
 
+	const handleEntryReorderKeyDown = useCallback(
+		(event, citation) => {
+			if (
+				!isNumericFamily ||
+				event.target !== event.currentTarget ||
+				!event.altKey
+			) {
+				return;
+			}
+
+			const label = getEntryLabel(citation);
+
+			if (event.key === 'ArrowUp') {
+				event.preventDefault();
+				moveCitationUp(citation.id, label);
+				return;
+			}
+
+			if (event.key === 'ArrowDown') {
+				event.preventDefault();
+				moveCitationDown(citation.id, label);
+			}
+		},
+		[getEntryLabel, isNumericFamily, moveCitationDown, moveCitationUp]
+	);
+
 	const getEntryClassName = (citation) => {
 		if (structuredEditingId === citation.id) {
 			return 'bibliography-builder-entry is-structured-editing';
@@ -853,10 +887,17 @@ export default function Edit({ attributes, setAttributes }) {
 						value={citationStyle}
 						options={selectableStyles}
 						onChange={handleCitationStyleChange}
-						help={__(
-							'Changing styles reformats auto-generated citations and keeps manual overrides intact.',
-							'borges-bibliography-builder'
-						)}
+						help={
+							isNumericFamily
+								? __(
+										"IEEE/Vancouver: arrange entries to match the order they're first cited in your text.",
+										'borges-bibliography-builder'
+								  )
+								: __(
+										'Changing styles reformats auto-generated citations and keeps manual overrides intact.',
+										'borges-bibliography-builder'
+								  )
+						}
 					/>
 					<TextControl
 						label={__(
@@ -1011,12 +1052,16 @@ export default function Edit({ attributes, setAttributes }) {
 			{/* Citation list */}
 			{sortedCitations.length > 0 && (
 				<ListTag className={listClassName} aria-busy={isLoading}>
-					{sortedCitations.map((citation) => (
+					{sortedCitations.map((citation, index) => (
+						/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */
 						<li
 							key={citation.id}
 							ref={(node) => setEntryRef(citation.id, node)}
 							className={getEntryClassName(citation)}
 							tabIndex={-1}
+							onKeyDown={(event) =>
+								handleEntryReorderKeyDown(event, citation)
+							}
 						>
 							<CitationEntryBody
 								citation={citation}
@@ -1045,6 +1090,21 @@ export default function Edit({ attributes, setAttributes }) {
 								}
 								handleStructuredFieldChange={
 									handleStructuredFieldChange
+								}
+								isNumericFamily={isNumericFamily}
+								canMoveUp={index > 0}
+								canMoveDown={index < sortedCitations.length - 1}
+								onMoveUp={() =>
+									moveCitationUp(
+										citation.id,
+										getEntryLabel(citation)
+									)
+								}
+								onMoveDown={() =>
+									moveCitationDown(
+										citation.id,
+										getEntryLabel(citation)
+									)
 								}
 								isStructuredEditable={isStructuredEditable(
 									citation

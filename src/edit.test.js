@@ -828,6 +828,168 @@ describe('Edit focus management', () => {
 		});
 	});
 
+	it('shows numeric reorder controls and inspector guidance for IEEE', () => {
+		render(
+			<EditHarness
+				initialStyle="ieee"
+				initialCitations={[
+					createCitation({
+						id: 'zulu',
+						family: 'Zulu',
+						year: 2024,
+						title: 'Zulu citation',
+					}),
+					createCitation({
+						id: 'alpha',
+						family: 'Alpha',
+						year: 2023,
+						title: 'Alpha citation',
+					}),
+				]}
+			/>
+		);
+
+		expect(
+			screen.getByText(
+				"IEEE/Vancouver: arrange entries to match the order they're first cited in your text."
+			)
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole('button', { name: "Move 'Zulu 2024' up" })
+		).toBeDisabled();
+		expect(
+			screen.getByRole('button', { name: "Move 'Zulu 2024' down" })
+		).toBeEnabled();
+		expect(
+			screen.getByRole('button', { name: "Move 'Alpha 2023' up" })
+		).toBeEnabled();
+		expect(
+			screen.getByRole('button', { name: "Move 'Alpha 2023' down" })
+		).toBeDisabled();
+	});
+
+	it('does not render numeric reorder controls for author-date styles', () => {
+		render(
+			<EditHarness
+				initialStyle="chicago-author-date"
+				initialCitations={[
+					createCitation({
+						id: 'alpha',
+						family: 'Alpha',
+						year: 2023,
+						title: 'Alpha citation',
+					}),
+				]}
+			/>
+		);
+
+		expect(
+			screen.queryByRole('button', { name: /Move '.*' up/ })
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText(
+				"IEEE/Vancouver: arrange entries to match the order they're first cited in your text."
+			)
+		).not.toBeInTheDocument();
+	});
+
+	it('reorders numeric citations with arrow controls and keeps focus on moved entry', async () => {
+		render(
+			<EditHarness
+				initialStyle="ieee"
+				initialCitations={[
+					createCitation({
+						id: 'zulu',
+						family: 'Zulu',
+						year: 2024,
+						title: 'Zulu citation',
+					}),
+					createCitation({
+						id: 'alpha',
+						family: 'Alpha',
+						year: 2023,
+						title: 'Alpha citation',
+					}),
+				]}
+			/>
+		);
+
+		await userEvent.click(
+			screen.getByRole('button', { name: "Move 'Zulu 2024' down" })
+		);
+
+		await waitFor(() => {
+			const entries = screen.getAllByRole('listitem');
+			expect(entries[0]).toHaveTextContent('Alpha citation');
+			expect(entries[1]).toHaveTextContent('Zulu citation');
+			expect(entries[1]).toHaveFocus();
+		});
+	});
+
+	it('supports Alt+ArrowDown reorder shortcut for numeric styles', async () => {
+		render(
+			<EditHarness
+				initialStyle="ieee"
+				initialCitations={[
+					createCitation({
+						id: 'zulu',
+						family: 'Zulu',
+						year: 2024,
+						title: 'Zulu citation',
+					}),
+					createCitation({
+						id: 'alpha',
+						family: 'Alpha',
+						year: 2023,
+						title: 'Alpha citation',
+					}),
+				]}
+			/>
+		);
+
+		const firstEntry = screen.getAllByRole('listitem')[0];
+		firstEntry.focus();
+		fireEvent.keyDown(firstEntry, { key: 'ArrowDown', altKey: true });
+
+		await waitFor(() => {
+			const entries = screen.getAllByRole('listitem');
+			expect(entries[0]).toHaveTextContent('Alpha citation');
+			expect(entries[1]).toHaveTextContent('Zulu citation');
+		});
+	});
+
+	it('ignores Alt+ArrowDown reorder shortcut for non-numeric styles', async () => {
+		render(
+			<EditHarness
+				initialStyle="chicago-author-date"
+				initialCitations={[
+					createCitation({
+						id: 'alpha',
+						family: 'Alpha',
+						year: 2023,
+						title: 'Alpha citation',
+					}),
+					createCitation({
+						id: 'zulu',
+						family: 'Zulu',
+						year: 2024,
+						title: 'Zulu citation',
+					}),
+				]}
+			/>
+		);
+
+		const firstEntry = screen.getAllByRole('listitem')[0];
+		firstEntry.focus();
+		fireEvent.keyDown(firstEntry, { key: 'ArrowDown', altKey: true });
+
+		await waitFor(() => {
+			const entries = screen.getAllByRole('listitem');
+			expect(entries[0]).toHaveTextContent('Alpha citation');
+			expect(entries[1]).toHaveTextContent('Zulu citation');
+		});
+	});
+
 	it('allows selecting APA style before any citations are added', async () => {
 		render(<EditHarness />);
 
