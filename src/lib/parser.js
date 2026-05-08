@@ -405,7 +405,7 @@ function formatUnsupportedInputError() {
 }
 
 function formatLatexDocumentError() {
-	return 'This looks like LaTeX, not a bibliography entry. Paste a DOI, BibTeX entry, or supported citation instead.';
+	return 'This looks like LaTeX, not a bibliography entry. Paste a DOI, PMID, BibTeX entry, or supported citation instead.';
 }
 
 function formatBackendParseError(format, err) {

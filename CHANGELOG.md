@@ -14,7 +14,7 @@ No changes yet.
 ### Added
 
 - BibLaTeX export is available from the editor exports panel for LaTeX/Biber workflows with full Unicode support.
-- PMID input resolution imports PubMed records through the NCBI Literature Citation Export API.
+- PMID input resolution imports PubMed records through the authenticated WordPress REST proxy to the NCBI/PMC Literature Citation Exporter API.
 - Numeric citation styles now support manual reordering, including visible move controls and keyboard Alt+Arrow movement.
 - New bibliography blocks get style-aware default headings.
 
@@ -23,6 +23,7 @@ No changes yet.
 - Citation mutations now reformat the full bibliography so cached display text, sort order, and metadata stay aligned after edits, deletes, style changes, and structured updates.
 - Sorting now uses explicit style-family dispatch, author-date solo-first ordering, contributor-chain tie-breaks, and numeric no-op ordering where appropriate.
 - OSCOLA users now see an editor notice explaining the current single-list limitation for grouped bibliographies.
+- Readmes and release notes now highlight the 1.2.0 interoperability features, recent 1.1.x accessibility fixes, and ABNT (Associação Brasileira de Normas Técnicas) support targeting NBR 6023:2018.
 
 ### Fixed
 
@@ -33,6 +34,7 @@ No changes yet.
 ### Internal
 
 - Added JS/PHP sort-coordination fixtures, citeproc cross-runner conformance checks, targeted Codecov warning coverage, and locale/lock parity audit tests.
+- Added compact matrix tests for all nine style save semantics, all nine formatter outputs, export ordering for author-date versus numeric styles, and PMID REST proxy regression coverage before tagging 1.2.0.
 
 ## [1.1.1] - 2026-05-07
 
@@ -82,7 +84,7 @@ No changes yet.
 - DOI and BibTeX input parsing via citation-js.
 - Supported formatted citation input for books, articles, chapters, webpages, reviews, and theses.
 - Manual entry with structured fields and per-type validation.
-- Nine citation styles: Chicago Notes-Bibliography (default), Chicago Author-Date, APA 7, MLA 9, Harvard, Vancouver, IEEE, OSCOLA, and ABNT.
+- Nine citation styles: Chicago Notes-Bibliography (default), Chicago Author-Date, APA 7, MLA 9, Harvard, Vancouver, IEEE, OSCOLA, and ABNT (Associação Brasileira de Normas Técnicas) targeting NBR 6023:2018.
 - Automatic alphabetical sorting per style rules.
 - Duplicate detection across paste and manual entry.
 - Static save with semantic HTML (`role="doc-bibliography"`, `<cite>` wrappers, `lang` attributes, and no deprecated bibliography-entry ARIA role in newly saved output).
@@ -138,4 +140,4 @@ No changes yet.
 - The PHPUnit `wp_strip_all_tags()` stub now matches WordPress behavior and no longer collapses whitespace, exposing plain-text rendering bugs more accurately.
 - `jsonld.js` now maps chapter citations with a container title to `isPartOf: { @type: "Book" }`, and maps `review-book` to `Review`.
 - `coins.js` now emits dissertation-specific COinS metadata for thesis citations instead of falling back to the journal format.
-- ABNT formatter normalization now collapses duplicate page markers such as `p. p.` and `p. pp.`.
+- ABNT/NBR 6023:2018 formatter normalization now collapses duplicate page markers such as `p. p.` and `p. pp.`.

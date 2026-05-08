@@ -123,6 +123,29 @@ Deferred / demand-gated:
 
 These exports complement the existing metadata-output toggles by giving users tangible bibliography data files they can download and reuse directly.
 
+## Identifier input and metadata-resolution backlog
+
+Future identifier support should be implemented as a resolver layer, not as
+format-specific parser hacks. Each resolver must validate the identifier before
+making outbound requests, use fixed upstream hosts or vetted provider adapters,
+avoid SSRF-prone arbitrary URL fetches, normalize results to CSL-JSON, and keep
+CSL-JSON as the source of truth for save output, exports, JSON-LD, COinS, and
+CSL-JSON script blocks.
+
+| Identifier | Status | Evaluation |
+| --- | --- | --- |
+| **ISBN-10 / ISBN-13** | Planned support | High-value next book/monograph importer. Accept `ISBN:` prefixes plus bare, hyphenated, or spaced ISBNs; validate ISBN-10/ISBN-13 checksums before lookup; evaluate metadata providers and terms before choosing a resolver. |
+| **PMCID** | Planned support | Strong biomedical follow-up to PMID. Resolve through the same authenticated WordPress REST proxy pattern; prefer NCBI-derived CSL/PMID/DOI metadata when available. |
+| **arXiv ID** | Planned support | High-value scholarly preprint importer. Accept modern and legacy arXiv identifiers; resolve through arXiv metadata APIs; map to CSL article/report-ish records while preserving DOI/journal data when present. |
+| **ISSN** | Evaluate | Identifies a serial, not a specific cited work. Useful for journal/periodical enrichment and validation, but should not create a standalone bibliography entry unless paired with article-level metadata. |
+| **URL** | Evaluate | Useful but risky and unreliable. Consider after fixed-host identifiers; require strict timeout, content-type, size, redirect, and allowlist/denylist controls; prefer standards-based metadata (`citation_*`, Open Graph, JSON-LD, COinS) over arbitrary scraping. |
+| **OCLC / WorldCat** | Evaluate | Useful for library/book workflows and edition disambiguation. Needs API/access/licensing review and careful mapping from edition/work records to CSL `book`. |
+| **ORCID** | Evaluate as enrichment only | Identifies people, not publications. Useful for author enrichment and disambiguation in manual/resolved records, but not a standalone citation import path. |
+| **ISRC** | Evaluate niche media support | Identifies sound recordings. Could map to CSL `song`/audio records if a reliable resolver is available; lower priority than scholarly text identifiers. |
+| **ISWC** | Evaluate niche media support | Identifies musical works/compositions. Potentially useful for music scholarship; resolver availability and CSL mapping need investigation. |
+| **ISAN** | Evaluate niche media support | Identifies audiovisual works. Could support film/media bibliographies; requires resolver and CSL `motion_picture`/broadcast mapping review. |
+| **EIDR** | Evaluate niche media support | Identifies movies/TV and related audiovisual assets. Similar to ISAN; useful for media studies if resolver access and metadata quality are acceptable. |
+
 ## Performance hardening track
 
 Grounded in the 2026-04-04 Xdebug/profile review:

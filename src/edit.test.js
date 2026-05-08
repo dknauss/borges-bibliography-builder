@@ -583,7 +583,7 @@ describe('Edit focus management', () => {
 
 		expect(
 			screen.getByPlaceholderText(
-				'Add DOI(s), BibTeX entries, and citations in supported styles for books, articles, chapters, and webpages. Separate multiple formatted citations with a blank line.'
+				'Add DOI(s), PubMed/PMID records, BibTeX entries, and citations in supported styles for books, articles, chapters, and webpages. Separate multiple formatted citations with a blank line.'
 			)
 		).toBeInTheDocument();
 

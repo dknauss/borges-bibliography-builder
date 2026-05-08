@@ -54,10 +54,11 @@ A standalone WordPress block plugin that transforms pasted scholarly citations (
 ### Supported Input Formats
 
 1. **DOI** — one or more per paste, one per line. Detected by `10.\d{4,}/` pattern. Resolved to CSL-JSON via `citation-js` (CrossRef lookup, client-side, no API key).
-2. **BibTeX** — one or more entries per paste. Detected by `@type{` boundaries. Parsed to CSL-JSON via `citation-js` (client-side).
-3. **Mixed** — a paste containing both DOIs and BibTeX entries, separated by blank lines.
-4. **Free-text formatted citations** — heuristic parser for books, journal articles, chapters, webpages/social posts, reviews, and theses/dissertations. Support is best-effort; unsupported inputs fail closed with a block-local notice.
-5. **Manual entry** — structured form with Publication Type, Author(s), Title, Container, Publisher, Year, Pages, DOI, and URL fields.
+2. **PubMed/PMID** — one or more `PMID:<number>` entries per paste. Resolved through the authenticated WordPress REST proxy to a fixed NCBI/PMC CSL endpoint; PMID input is validated as numeric before any outbound request.
+3. **BibTeX** — one or more entries per paste. Detected by `@type{` boundaries. Parsed to CSL-JSON via `citation-js` (client-side).
+4. **Mixed** — a paste containing DOIs, PubMed/PMID entries, and BibTeX entries, separated by blank lines.
+5. **Free-text formatted citations** — heuristic parser for books, journal articles, chapters, webpages/social posts, reviews, and theses/dissertations. Support is best-effort; unsupported inputs fail closed with a block-local notice.
+6. **Manual entry** — structured form with Publication Type, Author(s), Title, Container, Publisher, Year, Pages, DOI, and URL fields.
 
 ### Citation Styles (1.0)
 
@@ -71,7 +72,7 @@ Default: **Chicago Manual of Style — Notes-Bibliography**. Nine styles are sel
 -   IEEE
 -   MLA 9
 -   OSCOLA
--   ABNT
+-   ABNT (Associação Brasileira de Normas Técnicas / NBR 6023:2018)
 
 Changing styles reformats all auto-generated citations and preserves manual display overrides. Future phases may extend this to custom CSL file uploads.
 
@@ -918,7 +919,22 @@ The following features originally planned for later phases shipped in 1.0:
 
 ### Future: Enhanced Input
 
--   **Additional identifier inputs:** PMID, PMCID, ISBN, URL (with metadata scraping). `citation-js` has plugins for several of these.
+PMID support shipped in 1.2. Future identifier support should use a resolver layer, not format-specific parser hacks. Each resolver must validate identifiers before outbound requests, use fixed upstream hosts or vetted provider adapters, avoid SSRF-prone arbitrary URL fetches, normalize results to CSL-JSON, and keep CSL-JSON as the source of truth for save output, exports, JSON-LD, COinS, and CSL-JSON script blocks.
+
+| Identifier | Status | Evaluation |
+| --- | --- | --- |
+| **ISBN-10 / ISBN-13** | Planned support | High-value next book/monograph importer. Accept `ISBN:` prefixes plus bare, hyphenated, or spaced ISBNs; validate ISBN-10/ISBN-13 checksums before lookup; evaluate metadata providers and terms before choosing a resolver. |
+| **PMCID** | Planned support | Strong biomedical follow-up to PMID. Resolve through the same authenticated WordPress REST proxy pattern; prefer NCBI-derived CSL/PMID/DOI metadata when available. |
+| **arXiv ID** | Planned support | High-value scholarly preprint importer. Accept modern and legacy arXiv identifiers; resolve through arXiv metadata APIs; map to CSL article/report-ish records while preserving DOI/journal data when present. |
+| **ISSN** | Evaluate | Identifies a serial, not a specific cited work. Useful for journal/periodical enrichment and validation, but should not create a standalone bibliography entry unless paired with article-level metadata. |
+| **URL** | Evaluate | Useful but risky and unreliable. Consider after fixed-host identifiers; require strict timeout, content-type, size, redirect, and allowlist/denylist controls; prefer standards-based metadata (`citation_*`, Open Graph, JSON-LD, COinS) over arbitrary scraping. |
+| **OCLC / WorldCat** | Evaluate | Useful for library/book workflows and edition disambiguation. Needs API/access/licensing review and careful mapping from edition/work records to CSL `book`. |
+| **ORCID** | Evaluate as enrichment only | Identifies people, not publications. Useful for author enrichment and disambiguation in manual/resolved records, but not a standalone citation import path. |
+| **ISRC** | Evaluate niche media support | Identifies sound recordings. Could map to CSL `song`/audio records if a reliable resolver is available; lower priority than scholarly text identifiers. |
+| **ISWC** | Evaluate niche media support | Identifies musical works/compositions. Potentially useful for music scholarship; resolver availability and CSL mapping need investigation. |
+| **ISAN** | Evaluate niche media support | Identifies audiovisual works. Could support film/media bibliographies; requires resolver and CSL `motion_picture`/broadcast mapping review. |
+| **EIDR** | Evaluate niche media support | Identifies movies/TV and related audiovisual assets. Similar to ISAN; useful for media studies if resolver access and metadata quality are acceptable. |
+
 -   **RIS file import.** Accept `.ris` file uploads and parse to CSL-JSON. Enables bulk import from reference managers.
 -   **Custom CSL file upload.** Allow users to upload a `.csl` file for any of the 10,000+ styles in the CSL repository.
 

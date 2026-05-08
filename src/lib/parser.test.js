@@ -848,7 +848,7 @@ Hallo world\\cite{einstein}
 
 		expect(result.entries).toEqual([]);
 		expect(result.errors).toEqual([
-			'This looks like LaTeX, not a bibliography entry. Paste a DOI, BibTeX entry, or supported citation instead.',
+			'This looks like LaTeX, not a bibliography entry. Paste a DOI, PMID, BibTeX entry, or supported citation instead.',
 		]);
 		expect(result.remainingInput).toContain('\\documentclass{article}');
 	});
@@ -858,7 +858,7 @@ Hallo world\\cite{einstein}
 
 		expect(result.entries).toEqual([]);
 		expect(result.errors).toEqual([
-			'This looks like LaTeX, not a bibliography entry. Paste a DOI, BibTeX entry, or supported citation instead.',
+			'This looks like LaTeX, not a bibliography entry. Paste a DOI, PMID, BibTeX entry, or supported citation instead.',
 		]);
 		expect(result.remainingInput).toBe('\\autocite{einstein}');
 	});
@@ -1090,11 +1090,11 @@ describe('PMID input resolution', () => {
 	const SAMPLE_CSL = {
 		type: 'article-journal',
 		title: 'CRISPR–Cas9 for medical genetic screens: applications and future perspectives',
-		'container-title': 'Nature Reviews Genetics',
-		author: [{ family: 'Anzalone', given: 'Andrew V.' }],
-		issued: { 'date-parts': [[2023]] },
-		DOI: '10.1038/s41576-022-00557-5',
-		PMID: '36658352',
+		'container-title': 'Journal of medical genetics',
+		author: [{ family: 'Xue', given: 'Hui-Ying' }],
+		issued: { 'date-parts': [[2016, 2]] },
+		DOI: '10.1136/jmedgenet-2015-103409',
+		PMID: '26673779',
 	};
 
 	function makeFetchFn(status = 200, body = SAMPLE_CSL) {
@@ -1108,12 +1108,12 @@ describe('PMID input resolution', () => {
 	it('detects PMID: prefixed input and fetches from NCBI API', async () => {
 		const fetchFn = makeFetchFn();
 
-		const result = await parsePastedInput('PMID:36658352', 'apa', {
+		const result = await parsePastedInput('PMID:26673779', 'apa', {
 			fetchFn,
 		});
 
 		expect(fetchFn).toHaveBeenCalledWith(
-			'https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=36658352'
+			'https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=26673779'
 		);
 		expect(result.entries).toHaveLength(1);
 		expect(result.errors).toHaveLength(0);
@@ -1122,12 +1122,12 @@ describe('PMID input resolution', () => {
 	it('accepts lowercase pmid: prefix', async () => {
 		const fetchFn = makeFetchFn();
 
-		const result = await parsePastedInput('pmid:36658352', 'apa', {
+		const result = await parsePastedInput('pmid:26673779', 'apa', {
 			fetchFn,
 		});
 
 		expect(fetchFn).toHaveBeenCalledWith(
-			'https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=36658352'
+			'https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=26673779'
 		);
 		expect(result.entries).toHaveLength(1);
 	});
@@ -1135,12 +1135,12 @@ describe('PMID input resolution', () => {
 	it('accepts PMID: with a space before the number', async () => {
 		const fetchFn = makeFetchFn();
 
-		const result = await parsePastedInput('PMID: 36658352', 'apa', {
+		const result = await parsePastedInput('PMID: 26673779', 'apa', {
 			fetchFn,
 		});
 
 		expect(fetchFn).toHaveBeenCalledWith(
-			'https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=36658352'
+			'https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=26673779'
 		);
 		expect(result.entries).toHaveLength(1);
 	});
@@ -1148,7 +1148,7 @@ describe('PMID input resolution', () => {
 	it('maps NCBI CSL-JSON to a citation entry with inputFormat pmid', async () => {
 		const fetchFn = makeFetchFn();
 
-		const result = await parsePastedInput('PMID:36658352', 'apa', {
+		const result = await parsePastedInput('PMID:26673779', 'apa', {
 			fetchFn,
 		});
 
@@ -1164,10 +1164,10 @@ describe('PMID input resolution', () => {
 	it('uses the WordPress REST proxy for PMID resolution by default', async () => {
 		apiFetch.mockResolvedValue(SAMPLE_CSL);
 
-		const result = await parsePastedInput('PMID:36658352', 'apa');
+		const result = await parsePastedInput('PMID:26673779', 'apa');
 
 		expect(apiFetch).toHaveBeenCalledWith({
-			path: '/bibliography/v1/pmid/36658352',
+			path: '/bibliography/v1/pmid/26673779',
 		});
 		expect(result.entries).toHaveLength(1);
 		expect(result.errors).toHaveLength(0);
@@ -1188,7 +1188,7 @@ describe('PMID input resolution', () => {
 	it('returns a PMID error when the Fetch API is unavailable', async () => {
 		apiFetch.mockRejectedValue(new Error('WordPress API unavailable'));
 
-		const result = await parsePastedInput('PMID:36658352', 'apa');
+		const result = await parsePastedInput('PMID:26673779', 'apa');
 
 		expect(result.entries).toHaveLength(0);
 		expect(result.errors).toEqual([
@@ -1200,7 +1200,7 @@ describe('PMID input resolution', () => {
 		const fetchFn = makeFetchFn();
 		Cite.async.mockClear();
 
-		await parsePastedInput('PMID:36658352', 'apa', { fetchFn });
+		await parsePastedInput('PMID:26673779', 'apa', { fetchFn });
 
 		expect(Cite.async).not.toHaveBeenCalled();
 	});
