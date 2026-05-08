@@ -592,7 +592,7 @@ describe('Edit focus management', () => {
 		await userEvent.click(screen.getByRole('button', { name: 'Add' }));
 
 		expect(await screen.findByRole('status')).toHaveTextContent(
-			'Paste a DOI, BibTeX entry, or supported citation for a book, article, chapter, or webpage. Separate multiple formatted citations with a blank line.'
+			'Paste a DOI, PMID (PubMed ID), BibTeX entry, or supported citation for a book, article, chapter, or webpage. Separate multiple formatted citations with a blank line.'
 		);
 	});
 
@@ -600,7 +600,7 @@ describe('Edit focus management', () => {
 		parsePastedInput.mockResolvedValue({
 			entries: [],
 			errors: [
-				'Paste a DOI, BibTeX entry, or supported citation for a book, article, chapter, or webpage. Separate multiple formatted citations with a blank line.',
+				'Paste a DOI, PMID (PubMed ID), BibTeX entry, or supported citation for a book, article, chapter, or webpage. Separate multiple formatted citations with a blank line.',
 			],
 			truncated: false,
 			remainingInput: 'Private Draft Citation',
@@ -617,7 +617,7 @@ describe('Edit focus management', () => {
 		const status = await screen.findByRole('status');
 
 		expect(status).toHaveTextContent(
-			'Paste a DOI, BibTeX entry, or supported citation for a book, article, chapter, or webpage. Separate multiple formatted citations with a blank line.'
+			'Paste a DOI, PMID (PubMed ID), BibTeX entry, or supported citation for a book, article, chapter, or webpage. Separate multiple formatted citations with a blank line.'
 		);
 		expect(status).not.toHaveTextContent('Private Draft Citation');
 		expect(screen.getByLabelText('Add citations')).toHaveValue(
@@ -636,7 +636,7 @@ describe('Edit focus management', () => {
 				}),
 			],
 			errors: [
-				'Paste a DOI, BibTeX entry, or supported citation for a book, article, chapter, or webpage. Separate multiple formatted citations with a blank line.',
+				'Paste a DOI, PMID (PubMed ID), BibTeX entry, or supported citation for a book, article, chapter, or webpage. Separate multiple formatted citations with a blank line.',
 			],
 			truncated: false,
 			remainingInput: 'Unparsed citation chunk',
