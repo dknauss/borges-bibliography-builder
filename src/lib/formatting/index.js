@@ -58,16 +58,19 @@ function splitTrailingUrlPunctuation(url) {
 /**
  * Split text into segments with URL detection for linking.
  *
- * @param {string} text Text to parse.
- * @return {Array<{text: string, href?: string, link: boolean}>} Segments.
+ * @param {string} text              Text to parse.
+ * @param {Object} [options]         Options.
+ * @param {string} [options.linkLabel] Accessible label for link segments.
+ * @return {Array<{text: string, href?: string, link: boolean, label?: string}>} Segments.
  *
  * @since 0.1.0
  */
-export function splitTextIntoLinkParts(text) {
+export function splitTextIntoLinkParts(text, options = {}) {
 	if (!text) {
 		return [{ text: '', link: false }];
 	}
 
+	const { linkLabel } = options;
 	const parts = [];
 	let cursor = 0;
 
@@ -88,6 +91,7 @@ export function splitTextIntoLinkParts(text) {
 			text: href,
 			href,
 			link: true,
+			...(linkLabel !== undefined ? { label: linkLabel } : {}),
 		});
 
 		if (trailing) {
