@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/paypalme/DanKnauss
 Tags: bibliography, citation, doi, bibtex, academic
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -107,6 +107,15 @@ This plugin connects to the **CrossRef REST API** (https://api.crossref.org/) wh
 
 == Changelog ==
 
+= 1.2.0 =
+* Add BibLaTeX export from the editor exports panel.
+* Add PMID input resolution through the NCBI Literature Citation Export API.
+* Add manual reordering controls for numeric citation styles, including keyboard Alt+Arrow movement.
+* Reformat the full bibliography after citation mutations so cached display text, sort order, and metadata stay aligned.
+* Improve sort parity with style-family dispatch, author-date tie-breakers, and JS/PHP coordination fixtures.
+* Improve accessibility names for saved citation URL links and block toolbar controls.
+* Harden Playwright accessibility and Playground smoke tests for shared WordPress Playground servers.
+
 = 1.1.1 =
 * Fix Block Accessibility Checks (BAC) integration shipped in 1.1.0: register against the current BAC API, harden the soft opt-in, and load validation checks reliably so the `empty_bibliography` error and `heading_missing` warning fire as documented when the BAC plugin is active.
 * Fix editor focus-ring regression so keyboard focus on entry actions remains visible.
@@ -144,6 +153,12 @@ This plugin connects to the **CrossRef REST API** (https://api.crossref.org/) wh
 * Confirm compatibility wording through WordPress 7.0 testing.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Adds BibLaTeX and PMID interoperability, numeric citation reordering, stronger sort parity, and accessibility/CI hardening.
+
+= 1.1.1 =
+Fixes Block Accessibility Checks integration and editor focus visibility.
 
 = 1.0.2 =
 Fixes WordPress Playground demo formatting when the browser runtime does not load PHP Intl from the extension bundle alone.

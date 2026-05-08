@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No changes yet.
 
+## [1.2.0] - 2026-05-08
+
+### Added
+
+- BibLaTeX export is available from the editor exports panel for LaTeX/Biber workflows with full Unicode support.
+- PMID input resolution imports PubMed records through the NCBI Literature Citation Export API.
+- Numeric citation styles now support manual reordering, including visible move controls and keyboard Alt+Arrow movement.
+- New bibliography blocks get style-aware default headings.
+
+### Changed
+
+- Citation mutations now reformat the full bibliography so cached display text, sort order, and metadata stay aligned after edits, deletes, style changes, and structured updates.
+- Sorting now uses explicit style-family dispatch, author-date solo-first ordering, contributor-chain tie-breaks, and numeric no-op ordering where appropriate.
+- OSCOLA users now see an editor notice explaining the current single-list limitation for grouped bibliographies.
+
+### Fixed
+
+- Saved citation URL links and block toolbar controls now expose clearer accessible names.
+- Playwright accessibility and Playground smoke tests are more deterministic on GitHub Actions by selecting the block explicitly and serializing tests that share one Playground server.
+
+### Internal
+
+- Added JS/PHP sort-coordination fixtures, citeproc cross-runner conformance checks, targeted Codecov warning coverage, and locale/lock parity audit tests.
+
 ## [1.1.1] - 2026-05-07
 
 ### Fixed
