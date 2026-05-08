@@ -27,6 +27,26 @@ final class SortCoordinationTest extends TestCase {
 		}
 	}
 
+	public function test_sanity_check_detects_style_drift_against_fixture_expectations(): void {
+		$fixture = null;
+		foreach ( self::staticCasesProvider() as $provided_case ) {
+			$case = $provided_case[0];
+			if ( 'case-09-numeric-input-order' === $case['id'] ) {
+				$fixture = $case;
+				break;
+			}
+		}
+
+		$this->assertNotNull( $fixture );
+
+		$drifted_order = $this->render_order_for_style(
+			$fixture['citations'],
+			'chicago-author-date'
+		);
+
+		$this->assertNotSame( $fixture['expectedOrder'], $drifted_order );
+	}
+
 	public static function staticCasesProvider(): array {
 		$base_path = dirname( __DIR__ ) . '/fixtures/sort-coordination/';
 		$cases     = json_decode( file_get_contents( $base_path . 'cases.json' ), true );
