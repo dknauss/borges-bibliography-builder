@@ -13,6 +13,7 @@ import { parsePastedInput } from './lib/parser';
 import {
 	buildPlainTextBibliographyContent,
 	downloadBibtexExport,
+	downloadBiblatexExport,
 	downloadCslJsonExport,
 	downloadRisExport,
 } from './lib/export';
@@ -284,6 +285,7 @@ jest.mock('./lib/export', () => ({
 		() => 'Alpha citation\nBeta citation\n'
 	),
 	downloadBibtexExport: jest.fn(),
+	downloadBiblatexExport: jest.fn(),
 	downloadCslJsonExport: jest.fn(),
 	downloadRisExport: jest.fn(),
 }));
@@ -561,6 +563,7 @@ describe('Edit focus management', () => {
 			'Alpha citation\nBeta citation\n'
 		);
 		downloadBibtexExport.mockReset();
+		downloadBiblatexExport.mockReset();
 		downloadCslJsonExport.mockReset();
 		downloadRisExport.mockReset();
 		copyTextToClipboard.mockReset();
@@ -1237,6 +1240,72 @@ describe('Edit focus management', () => {
 
 		expect(await screen.findByRole('status')).toHaveTextContent(
 			'Could not download RIS export in this browser.'
+		);
+	});
+
+	it('downloads a BibLaTeX export from the inspector when citations are present', async () => {
+		downloadBiblatexExport.mockResolvedValue('blob:biblatex');
+
+		render(
+			<EditHarness
+				initialCitations={[
+					createCitation({
+						id: 'citation-1',
+						family: 'Alpha',
+						year: 2024,
+						title: 'Alpha citation',
+					}),
+				]}
+			/>
+		);
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Download BibLaTeX' })
+		);
+
+		await waitFor(() => {
+			expect(downloadBiblatexExport).toHaveBeenCalledWith(
+				expect.arrayContaining([
+					expect.objectContaining({ id: 'citation-1' }),
+				]),
+				'chicago-notes-bibliography'
+			);
+		});
+		expect(await screen.findByRole('status')).toHaveTextContent(
+			'Downloaded BibLaTeX export.'
+		);
+	});
+
+	it('disables the BibLaTeX export button when there are no citations', () => {
+		render(<EditHarness />);
+
+		expect(
+			screen.getByRole('button', { name: 'Download BibLaTeX' })
+		).toBeDisabled();
+	});
+
+	it('shows an error notice when BibLaTeX export fails', async () => {
+		downloadBiblatexExport.mockRejectedValueOnce(new Error('download failed'));
+
+		render(
+			<EditHarness
+				initialCitations={[
+					createCitation({
+						id: 'citation-1',
+						family: 'Alpha',
+						year: 2024,
+						title: 'Alpha citation',
+					}),
+				]}
+			/>
+		);
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Download BibLaTeX' })
+		);
+
+		expect(await screen.findByRole('status')).toHaveTextContent(
+			'Could not download BibLaTeX export in this browser.'
 		);
 	});
 
