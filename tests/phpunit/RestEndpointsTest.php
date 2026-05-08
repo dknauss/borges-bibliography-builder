@@ -58,6 +58,12 @@ final class RestEndpointsTest extends TestCase {
 		$this->assertSame( '/pmid/(?P<pmid>\d{1,8})', $routes[1]['route'] );
 		$this->assertSame( '/posts/(?P<post_id>\d+)/bibliographies', $routes[2]['route'] );
 		$this->assertSame( '/posts/(?P<post_id>\d+)/bibliographies/(?P<index>\d+)', $routes[3]['route'] );
+
+		$pmid_arg = $routes[1]['args']['args']['pmid'];
+		$this->assertSame( '26673779', $pmid_arg['sanitize_callback']( 'PMID: 26-673779' ) );
+		$this->assertTrue( $pmid_arg['validate_callback']( '26673779' ) );
+		$this->assertFalse( $pmid_arg['validate_callback']( '123456789' ) );
+		$this->assertFalse( $pmid_arg['validate_callback']( array( '26673779' ) ) );
 	}
 
 	public function test_published_posts_are_publicly_readable(): void {

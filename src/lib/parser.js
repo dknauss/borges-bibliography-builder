@@ -54,10 +54,6 @@ async function resolvePmidViaFetch(pmid, fetchFn) {
 }
 
 async function resolvePmidViaRest(pmid) {
-	if (typeof apiFetch !== 'function') {
-		throw new Error('WordPress API fetch is unavailable.');
-	}
-
 	return apiFetch({
 		path: `${PMID_REST_ENDPOINT}${encodeURIComponent(pmid)}`,
 	});

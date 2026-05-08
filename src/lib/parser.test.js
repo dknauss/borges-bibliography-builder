@@ -1233,3 +1233,76 @@ describe('PMID input resolution', () => {
 		expect(result.errors).toHaveLength(0);
 	});
 });
+
+describe('PMID fallback resolution', () => {
+	const SAMPLE_CSL = {
+		type: 'article-journal',
+		title: 'Fallback PMID citation',
+		PMID: '26673779',
+	};
+
+	function mockParserDependencies(apiFetchModule) {
+		jest.resetModules();
+		jest.doMock('@citation-js/core', () =>
+			require('../__test-utils__/citation-js-mocks').citationJsCoreMock()
+		);
+		jest.doMock('@citation-js/plugin-doi', () =>
+			require('../__test-utils__/citation-js-mocks').citationJsPluginMock()
+		);
+		jest.doMock('@citation-js/plugin-bibtex', () =>
+			require('../__test-utils__/citation-js-mocks').citationJsPluginMock()
+		);
+		jest.doMock('./formatting/csl', () =>
+			require('../__test-utils__/citation-js-mocks').stubFormattingFactory()
+		);
+		jest.doMock('@wordpress/api-fetch', () => apiFetchModule);
+	}
+
+	afterEach(() => {
+		jest.resetModules();
+		jest.dontMock('@wordpress/api-fetch');
+	});
+
+	it('falls back to window.fetch when the WordPress REST helper is unavailable', async () => {
+		const originalFetch = window.fetch;
+		const fetchMock = jest.fn().mockResolvedValue({
+			ok: true,
+			status: 200,
+			json: jest.fn().mockResolvedValue(SAMPLE_CSL),
+		});
+
+		mockParserDependencies({ __esModule: true, default: undefined });
+		window.fetch = fetchMock;
+
+		const { parsePastedInput: parseWithFallback } = require('./parser');
+		const result = await parseWithFallback('PMID:26673779', 'apa');
+
+		expect(fetchMock).toHaveBeenCalledWith(
+			'https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=26673779'
+		);
+		expect(result.errors).toEqual([]);
+		expect(result.entries[0]).toMatchObject({
+			inputFormat: 'pmid',
+			csl: SAMPLE_CSL,
+		});
+
+		window.fetch = originalFetch;
+	});
+
+	it('reports a PMID error when no REST or fetch transport is available', async () => {
+		const originalFetch = window.fetch;
+
+		mockParserDependencies({ __esModule: true, default: undefined });
+		delete window.fetch;
+
+		const { parsePastedInput: parseWithoutTransport } = require('./parser');
+		const result = await parseWithoutTransport('PMID:26673779', 'apa');
+
+		expect(result.entries).toEqual([]);
+		expect(result.errors).toEqual([
+			"Couldn't resolve the PMID. Check the number and try again.",
+		]);
+
+		window.fetch = originalFetch;
+	});
+});

@@ -136,6 +136,36 @@ final class RestEdgeCasesTest extends TestCase {
 		$this->assertSame( 404, $result->get_error_data()['status'] );
 	}
 
+	public function test_resolve_pmid_returns_502_when_pubmed_request_fails(): void {
+		$request         = new WP_REST_Request( 'GET', '/bibliography/v1/pmid/26673779' );
+		$request['pmid'] = '26673779';
+
+		$result = bibliography_builder_rest_resolve_pmid( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'bibliography_builder_pmid_upstream_error', $result->get_error_code() );
+		$this->assertSame( 502, $result->get_error_data()['status'] );
+		$this->assertCount( 1, bibliography_builder_test_get_http_requests() );
+	}
+
+	public function test_resolve_pmid_returns_502_for_unexpected_pubmed_status(): void {
+		bibliography_builder_test_set_http_response(
+			array(
+				'response' => array( 'code' => 500 ),
+				'body'     => '',
+			)
+		);
+
+		$request         = new WP_REST_Request( 'GET', '/bibliography/v1/pmid/26673779' );
+		$request['pmid'] = '26673779';
+
+		$result = bibliography_builder_rest_resolve_pmid( $request );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'bibliography_builder_pmid_not_found', $result->get_error_code() );
+		$this->assertSame( 502, $result->get_error_data()['status'] );
+	}
+
 	public function test_resolve_pmid_returns_502_for_invalid_upstream_json(): void {
 		bibliography_builder_test_set_http_response(
 			array(
