@@ -2444,3 +2444,35 @@ describe('Edit focus management', () => {
 		});
 	});
 });
+
+describe('OSCOLA inspector notice', () => {
+	it('shows OSCOLA limitation notice when OSCOLA style is selected', () => {
+		render(<EditHarness initialStyle="oscola" />);
+
+		expect(
+			screen.getByText(/OSCOLA convention groups bibliographies/i)
+		).toBeInTheDocument();
+	});
+
+	it('does not show OSCOLA notice for non-OSCOLA styles', () => {
+		render(<EditHarness initialStyle="chicago-notes-bibliography" />);
+
+		expect(
+			screen.queryByText(/OSCOLA convention groups bibliographies/i)
+		).not.toBeInTheDocument();
+	});
+
+	it('hides OSCOLA notice after dismissal', () => {
+		render(<EditHarness initialStyle="oscola" />);
+
+		expect(
+			screen.getByText(/OSCOLA convention groups bibliographies/i)
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: /dismiss/i }));
+
+		expect(
+			screen.queryByText(/OSCOLA convention groups bibliographies/i)
+		).not.toBeInTheDocument();
+	});
+});

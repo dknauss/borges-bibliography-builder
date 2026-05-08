@@ -11,6 +11,7 @@ import {
 import {
 	BaseControl,
 	Button,
+	Notice,
 	PanelBody,
 	Placeholder,
 	SelectControl,
@@ -162,6 +163,7 @@ export default function Edit({ attributes, setAttributes }) {
 	} bibliography-builder-list-${citationStyle}`;
 	const [inputValue, setInputValue] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
+	const [oscolaNoticeDismissed, setOscolaNoticeDismissed] = useState(false);
 	const [isFormOpen, setIsFormOpen] = useState(true);
 	const [activeAddMode, setActiveAddMode] = useState('paste');
 	const [manualFields, setManualFields] = useState(() =>
@@ -900,6 +902,18 @@ export default function Edit({ attributes, setAttributes }) {
 								  )
 						}
 					/>
+					{citationStyle === 'oscola' && !oscolaNoticeDismissed && (
+						<Notice
+							status="info"
+							isDismissible
+							onRemove={() => setOscolaNoticeDismissed(true)}
+						>
+							{__(
+								'OSCOLA convention groups bibliographies by source type (cases, legislation, books, articles, online). Borges currently renders a single alphabetized list. See Epic-OSCOLA for tracking.',
+								'borges-bibliography-builder'
+							)}
+						</Notice>
+					)}
 					<TextControl
 						label={__(
 							'Visible Heading',
