@@ -1,32 +1,62 @@
 # Performance, Stability & Footprint Remediation Plan
 
-This document turns the 2026-05-08 plugin audit into a concrete engineering plan focused on editor efficiency, release-package footprint, and long-term maintainability. It supplements the authoritative `/Users/danknauss/Developer/GitHub/wp-bibliography-block/SPEC.md`; it does not replace it.
+This document turns the 2026-05-08 plugin audit and the 2026-05-09 follow-up
+review into a concrete engineering plan focused on editor efficiency, formatter
+stability, release-package footprint, and long-term maintainability. It
+supplements the authoritative
+`/Users/danknauss/Developer/GitHub/wp-bibliography-block/SPEC.md`; it does not
+replace it.
 
-It is structured as a sequence of self-contained requirements grouped into four phases. Each requirement is intended to be liftable into the issue tracker with minimal rewriting.
+It is structured as a sequence of self-contained requirements grouped into
+phases. Each requirement is intended to be liftable into the issue tracker with
+minimal rewriting.
 
 ## Status
 
-- **Drafted:** 2026-05-08
-- **State:** Ready for sprint planning
-- **Owner:** TBD
-- **Stakeholders:** Plugin maintainers, performance reviewer, release engineering
-- **Canonical path:** `docs/planning/performance-stability-remediation-plan.md`
+-   **Drafted:** 2026-05-08
+-   **Revised:** 2026-05-09 — incorporated deep-dive performance/stability
+    findings
+-   **State:** Ready for sprint planning after stakeholder review
+-   **Owner:** TBD
+-   **Stakeholders:** Plugin maintainers, performance reviewer, release
+    engineering
+-   **Canonical path:**
+    `docs/planning/performance-stability-remediation-plan.md`
 
 ---
 
 ## TL;DR
 
-The plugin's public runtime is already strong: static save keeps the frontend lean, CSS is tiny, formatter dependencies are loaded lazily, and the existing input caps bound worst-case work. The main risk is not frontend bloat; it is **editor-side whole-bibliography work** and the growing complexity of a few large files.
+The plugin's public runtime is already strong: normal bibliography output is
+static saved HTML, there is no plugin-owned frontend runtime JS, frontend CSS is
+tiny, and formatter dependencies are loaded only when formatter routes are used.
+Borges is not currently frontend-bloated.
 
-The highest-return near-term work is:
+The highest-risk assumption in the original audit was that existing input caps
+fully bound worst-case work. They do not. The 50-entry paste cap and 1 MB input
+cap protect individual paste operations, but editor mutation paths send the
+**entire merged bibliography** to the formatter. Because the formatter endpoint
+also caps requests at 50 items, a block can reach a hidden 51-entry cliff after
+repeated additions. At that point, full-list formatting can fail and the editor
+can fall back to weak raw-title formatting.
 
-1. Add **server-side formatter caching**
-2. Add **PMID response caching**
-3. Add **stale async-result guards** across all editor mutation paths
-4. **Prune release-package dead weight**
-5. Fix the **benchmark harness** so it measures the real formatting path and fails loudly on fallback
+The highest-return near-term work is now:
 
-Longer-term work should focus on reducing whole-list reformatting for add/edit/delete flows, replacing the expensive bibliography cache-key strategy, and splitting monolithic modules before they become correctness hazards.
+1. Make the **benchmark harness authoritative** so fallback timings cannot
+   masquerade as real formatter timings
+2. Define and enforce a **total bibliography size policy** so 50+ existing
+   entries cannot hit a hidden formatter cliff
+3. Stop **caching fallback formatter output** as if it were successful formatted
+   output
+4. Remove **manual-entry double formatting**
+5. Add **stale async-result guards** across all editor mutation paths
+6. **Prune release-package dead weight**
+7. Cache **PMID resolution** responses and pre-dedupe/cache DOI lookups where
+   safe
+
+Longer-term work should reduce whole-bibliography reformatting only where
+style-context correctness is preserved, replace expensive cache-key generation,
+and split monolithic modules after behavior is covered by tests.
 
 ---
 
@@ -34,40 +64,137 @@ Longer-term work should focus on reducing whole-list reformatting for add/edit/d
 
 ### Current strengths
 
-- **Frontend footprint is excellent**
-  - Saved output is static HTML
-  - No plugin-owned frontend runtime JS for normal bibliography rendering
-  - `/Users/danknauss/Developer/GitHub/wp-bibliography-block/build/style-index.css` is ~1.7 KB
-- **Runtime safety rails are already in place**
-  - `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/parser.js` caps paste size at 1 MB and entries at 50
-  - Parse concurrency is capped at 4
-- **Formatter bootstrap is lazy**
-  - `/Users/danknauss/Developer/GitHub/wp-bibliography-block/bibliography-builder.php` only loads Composer formatter dependencies when formatter routes are used
-- **Test coverage is substantial**
-  - 45 test files across JS, PHP, E2E, accessibility, and runtime validation
+-   **Frontend footprint is excellent**
+    -   Saved output is static HTML
+    -   No plugin-owned frontend runtime JS for normal bibliography rendering
+    -   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/build/style-index.css`
+        is ~1.7 KB raw
+-   **Public runtime has no obvious WordPress performance anti-patterns**
+    -   No `session_start()` / frontend cookies
+    -   No public-page database writes
+    -   No public-page formatter work
+    -   No dynamic render callback for normal bibliography output
+-   **Runtime safety rails exist for paste operations**
+    -   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/parser.js`
+        caps individual paste size at 1 MB and detected entries at 50
+    -   Parse concurrency is capped at 4
+-   **Formatter bootstrap is lazy**
+    -   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/bibliography-builder.php`
+        only loads Composer formatter dependencies when formatter routes are
+        used
+-   **Test coverage is substantial**
+    -   JS, PHP, sort-conformance, save-output, parser, accessibility, runtime,
+        and E2E coverage are present
 
 ### Primary risks
 
-1. **Whole-bibliography work on small edits**
-   - Add, delete, structured edit, and style-switch flows often reformat and re-sort the entire list
-2. **Expensive cache lookups**
-   - `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/formatting/csl.js` uses deep stable-stringify of the full CSL payload for cache keys
-3. **No persistent server-side formatter cache**
-   - Repeated REST formatting requests can repay style file loading + citeproc rendering cost
-4. **External fragility on PMID resolution**
-   - `/Users/danknauss/Developer/GitHub/wp-bibliography-block/bibliography-builder.php` performs uncached network lookups
-5. **Large, multi-responsibility files**
-   - `src/edit.js`, `src/lib/free-text-parser.js`, `src/hooks/use-citation-editor-state.js`, and `bibliography-builder.php` are the clearest future fragility points
-6. **Benchmark ambiguity**
-   - The current harness can report timings influenced by formatter fallback behavior in non-WordPress environments
+1. **Hidden total-size cliff**
+    - Individual paste operations are capped at 50 entries, but repeated
+      additions can create a bibliography over 50 total entries
+    - Editor mutation paths send the entire merged bibliography to
+      `/bibliography/v1/format`
+    - The formatter endpoint rejects more than
+      `BIBLIOGRAPHY_BUILDER_MAX_FORMAT_ITEMS` items, currently 50
+2. **Whole-bibliography work on small edits**
+    - Add, delete, manual add, structured edit, and style-switch flows often
+      reformat and re-sort the entire list
+    - This is sometimes necessary for style-context correctness, but not every
+      current whole-list path is justified
+3. **Fallback formatter output can be cached**
+    - `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/formatting/csl.js`
+      stores fallback title/container text in the same in-session cache as
+      successful formatter responses
+    - A transient formatter failure can poison identical style+bibliography
+      lookups for the rest of the editor session
+4. **Manual entry double-formats**
+    - Manual add formats the single new entry in `createManualCitationFromCsl()`
+      and then formats the full merged bibliography in `handleManualAdd()`
+5. **Expensive and memory-heavy cache lookups**
+    - `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/formatting/csl.js`
+      uses deep stable-stringify of the full CSL payload for cache keys
+    - The formatter cache is currently entry-count bounded, not byte-bounded, so
+      repeated distinct full-bibliography payloads can retain large key strings
+      for the rest of the editor session
+6. **External network fragility**
+    - PMID resolution is proxied through WordPress but uncached
+    - DOI resolution remains client-side through `citation-js`; duplicate DOI
+      pastes can still trigger network requests before duplicate detection runs
+7. **Async stale-result exposure**
+    - Structured editing has useful cancel guards, but paste/import, manual add,
+      delete, and style switch do not share one consistent latest-operation
+      guard
+8. **Benchmark ambiguity**
+    - The current benchmark harness passes while exercising formatter fallback
+      in the Jest environment, so its formatter timings are not authoritative
+9. **Large, multi-responsibility files**
+    - `src/edit.js`, `src/lib/free-text-parser.js`,
+      `src/hooks/use-citation-editor-state.js`, and `bibliography-builder.php`
+      are the clearest future fragility points
+10. **PHP dependency deprecations**
+    - PHPUnit currently passes, but PHP 8.5 reports deprecations from
+      `seboettg/citeproc-php v2.7.1`; this is a future-compatibility risk to
+      track before PHP 9
 
 ### Release-package observations
 
-- Current release zip: ~588 KB
-- Current unpacked release: ~1.9 MB
-- Obvious prune candidates include:
-  - `composer.lock`
-  - non-runtime vendor docs/images/examples
+-   Current release zip observed in
+    `output/release/borges-bibliography-builder.zip`: ~588 KB
+-   Current unpacked release observed in
+    `output/release/borges-bibliography-builder`: ~1.9 MB
+-   High-return prune candidates include:
+    -   `composer.lock` (~205 KB raw)
+    -   `vendor/seboettg/collection/class-diagram.png` (~200 KB raw / ~169 KB
+        compressed)
+    -   non-runtime vendor docs/examples/images such as READMEs, changelogs,
+        diagrams, examples, test folders, and CI config
+-   Language files are a material portion of unpacked release size (~320 KB
+    observed) but should not be pruned casually because they are product assets,
+    not dead vendor weight
+
+### Current-state verification notes
+
+The 2026-05-09 review verified the current working tree before revising
+recommendations:
+
+-   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/build/style-index.css`
+    is 1,736 bytes raw
+-   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/build/index.js` is
+    57,755 bytes raw
+-   `block.json` registers editor assets and frontend CSS, but no plugin-owned
+    frontend runtime script for saved bibliography output
+-   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/parser.js`
+    currently sets `MAX_ENTRIES_PER_PASTE = 50`, `MAX_INPUT_SIZE = 1024 * 1024`,
+    and `PARSE_CONCURRENCY = 4`
+-   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/bibliography-builder.php`
+    currently sets `BIBLIOGRAPHY_BUILDER_MAX_FORMAT_ITEMS = 50` and
+    `BIBLIOGRAPHY_BUILDER_MAX_FORMAT_BYTES = 1048576`
+-   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/formatting/csl.js`
+    currently caches by full stable-stringified bibliography payload and stores
+    fallback output in the same cache path as successful formatter output
+-   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/scripts/package-release.sh`
+    currently copies `composer.lock` and prunes some vendor test/example
+    folders, but still ships known non-runtime vendor docs/images
+
+---
+
+## Corrected assumptions
+
+The following assumptions should guide sprint planning:
+
+1. **Input caps do not fully bound worst-case editor work.** They bound a single
+   paste, not total bibliography size.
+2. **Formatter caching is useful, but it is not the first fix.** Correctness
+   around fallback, total-size policy, and async commits comes first.
+3. **Transient fallback for full-bibliography formatter caches is risky.**
+   Dynamic full-payload transient keys can create `wp_options` churn on hosts
+   without persistent object cache.
+4. **Whole-list reformatting is sometimes required.** Same-author/same-year
+   suffixes and citeproc disambiguation can depend on bibliography context, so
+   per-entry optimization must be style/context aware.
+5. **Benchmark budgets are not actionable until fallback detection is fixed.**
+   Current benchmark output cannot be used as a formatter baseline.
+6. **Release size budgets should focus first on dead vendor weight, not language
+   assets.** Language files are sizable but intentional.
 
 ---
 
@@ -75,12 +202,23 @@ Longer-term work should focus on reducing whole-list reformatting for add/edit/d
 
 This plan is complete when:
 
-- The plugin remains **frontend-zero-JS** for normal rendered bibliography output
-- The release package is materially smaller with no runtime regressions
-- Repeated editor formatting actions benefit from caching
-- Async editor flows cannot commit stale state after user-visible cancellation or overlap
-- Performance reporting becomes trustworthy and budget-driven
-- The largest logic hotspots are either reduced in scope or scheduled for controlled decomposition
+-   The plugin remains **frontend-zero-JS** for normal rendered bibliography
+    output
+-   No normal public page render performs remote requests or formatter work
+-   The editor has a clear, tested total-bibliography size policy and no hidden
+    51-entry formatter cliff
+-   Fallback formatter output cannot poison the successful-format cache
+-   Manual add performs no redundant formatter request
+-   Async editor flows cannot commit stale state after user-visible cancellation
+    or superseding operations
+-   Performance reporting becomes trustworthy and budget-driven
+-   Repeated formatter actions benefit from caching without creating unbounded
+    transient churn
+-   The release package is materially smaller with no runtime regressions
+-   PHP dependency deprecations are tracked and either resolved or explicitly
+    accepted for the supported PHP matrix
+-   The largest logic hotspots are either reduced in scope or scheduled for
+    controlled decomposition
 
 ---
 
@@ -90,239 +228,73 @@ These are planning targets, not yet CI-enforced hard gates.
 
 ### Frontend
 
-- Plugin-owned frontend runtime JS: **0 KB**
-- Frontend CSS per direction: **< 3 KB**
-- No remote requests during saved bibliography rendering
+-   Plugin-owned frontend runtime JS: **0 KB**
+-   Frontend CSS per direction: **< 3 KB**
+-   No remote requests during saved bibliography rendering
+-   No PHP `render_callback` for normal bibliography output
 
 ### Release package
 
-- Release zip: **< 450 KB**
-- Unpacked release: **< 1.4 MB**
-- No non-runtime vendor docs/examples/images in the shipped package
+-   Release zip: **< 450 KB** after dead-weight pruning
+-   Unpacked release: **< 1.4 MB** after dead-weight pruning, excluding any
+    explicit decision to keep all translation assets
+-   No non-runtime vendor docs/examples/images in the shipped package
 
 ### Editor bundles
 
-- `/Users/danknauss/Developer/GitHub/wp-bibliography-block/build/index.js`: **< 60 KB raw**
-- Total shipped plugin JS chunks: **< 220 KB raw** near-term, **< 180 KB raw** stretch target
+-   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/build/index.js`:
+    **< 60 KB raw** near-term
+-   Total shipped plugin JS chunks: report-only until bundle analysis is
+    refreshed; then set a realistic raw and gzip budget
+-   Heavy citation parsing/export paths should remain dynamically imported where
+    practical
 
-### Editor interaction budgets (50-entry bibliography)
+### Editor interaction budgets
 
-- Deferred parse: **p50 < 20 ms**, **p95 < 60 ms**
-- Warm batch format, same style: **p50 < 40 ms**, **p95 < 100 ms**
-- Full style switch: **p50 < 120 ms**, **p95 < 250 ms**
-- Single-entry add/edit/delete: **p50 < 50 ms**, **p95 < 120 ms**
+Budgets below are provisional until REQ-B1 makes benchmark results
+authoritative.
+
+-   Deferred parse, 50-entry paste: **p50 < 20 ms**, **p95 < 60 ms**
+-   Warm batch format, same style, 50 entries: **p50 < 40 ms**, **p95 < 100 ms**
+-   Full style switch, 50 entries: **p50 < 120 ms**, **p95 < 250 ms**
+-   Single-entry add/edit/delete, 50-entry bibliography: **p50 < 50 ms**, **p95
+    < 120 ms**
+-   Any supported total size above 50 entries must get explicit benchmark
+    budgets before being enabled
 
 ### Stability
 
-- Zero stale async commits in automated tests
-- No production hotspot file should grow by more than 10% without explicit review
-- New parser heuristics require regression fixtures/tests in the same PR
+-   Zero stale async commits in automated tests
+-   Zero formatter-fallback cache poisoning regressions
+-   No production hotspot file should grow by more than 10% without explicit
+    review
+-   New parser heuristics require regression fixtures/tests in the same PR
 
 ---
 
 ## Phase summary
 
-| Phase | Theme | Requirements | Outcome |
-| --- | --- | --- | --- |
-| 1 | Quick wins | P1, P2, P3, P4 | Smaller package, faster repeated formatting, less network fragility |
-| 2 | Correctness hardening | S1, S2 | Async editor stability and reliable benchmarks |
-| 3 | Editor efficiency refactors | E1, E2, E3 | Reduced whole-list work and cheaper cache lookups |
-| 4 | Maintainability hardening | M1, M2, M3 | Lower fragility in core modules and public API extraction |
+| Phase | Theme                                  | Requirements       | Outcome                                                           |
+| ----- | -------------------------------------- | ------------------ | ----------------------------------------------------------------- |
+| 1     | Measurement and correctness guardrails | B1, C1, C2, C3, C4 | Trustworthy performance data and no hidden formatting cliffs      |
+| 2     | Async and network hardening            | S1, N1, N2         | Fewer stale commits and less upstream/network fragility           |
+| 3     | Footprint and safe caching             | P1, P2, P3         | Smaller package and cautious repeat-format wins                   |
+| 4     | Editor efficiency refactors            | E1, E2, E3         | Reduced unnecessary work with style-context correctness preserved |
+| 5     | Maintainability hardening              | M1, M2, M3, M4     | Lower fragility in core modules and dependencies                  |
 
-Recommended execution order: **P1 → P2 → P3 → P4 → S1 → S2 → E1 → E2 → E3 → M1/M2/M3**
-
----
-
-## Phase 1 — Quick wins
-
-## REQ-P1 — Prune release-package dead weight
-
-**Priority:** P0  
-**Effort:** XS–S  
-**Risk:** Low  
-**Dependencies:** None
-
-### Goal
-
-Reduce shipped plugin size without changing runtime behavior.
-
-### Scope
-
-Update `/Users/danknauss/Developer/GitHub/wp-bibliography-block/scripts/package-release.sh` to:
-
-- stop copying `composer.lock`
-- prune non-runtime files from `vendor/` more aggressively
-- verify expected package contents explicitly
-
-### Acceptance criteria
-
-- [ ] `composer.lock` is not present in the staged release directory
-- [ ] known non-runtime vendor docs/examples/images are removed
-- [ ] release zip is reduced from ~588 KB to **< 450 KB**
-- [ ] unpacked release is reduced from ~1.9 MB to **< 1.4 MB**
-- [ ] release smoke checks remain green
-
-### Files affected
-
-- `scripts/package-release.sh`
-- release verification docs/checklists as needed
+Recommended execution order: **B1 → C1 → C2 → C3 → C4 → S1 → N1 → N2 → P1 → P2 →
+P3 → E1/E2/E3 → M1/M2/M3/M4**
 
 ---
 
-## REQ-P2 — Cache formatter responses server-side
+## Phase 1 — Measurement and correctness guardrails
 
-**Priority:** P0  
-**Effort:** S–M  
-**Risk:** Low  
-**Dependencies:** None
+## REQ-B1 — Make the benchmark harness authoritative
 
-### Goal
-
-Avoid repeating expensive citeproc work for identical style + bibliography inputs.
-
-### Scope
-
-In `/Users/danknauss/Developer/GitHub/wp-bibliography-block/bibliography-builder.php`:
-
-- derive a stable cache key from:
-  - style key
-  - locale
-  - normalized CSL payload hash
-- cache formatted bibliography arrays
-- prefer object cache, fallback to transients
-- default TTL: **1 hour**
-
-### Acceptance criteria
-
-- [ ] identical repeat formatting requests hit cache
-- [ ] cache miss path still returns identical output to current behavior
-- [ ] warm-path formatter requests are measurably faster than cold-path requests
-- [ ] tests cover cold and warm cache paths
-
-### Files affected
-
-- `bibliography-builder.php`
-- PHP tests for formatter endpoints/services
-
----
-
-## REQ-P3 — Cache PMID resolution responses
-
-**Priority:** P1  
-**Effort:** S  
-**Risk:** Low  
-**Dependencies:** None
-
-### Goal
-
-Reduce network latency, upstream dependency pressure, and repeated editor failures for the same PMID.
-
-### Scope
-
-In `/Users/danknauss/Developer/GitHub/wp-bibliography-block/bibliography-builder.php`:
-
-- cache successful PMID lookups by PMID
-- cache 404/not-found responses separately
-- optionally cache transient upstream failures briefly
-
-### Suggested TTLs
-
-- success: **24h**
-- not found: **1h**
-- upstream failure: **5–15 min**
-
-### Acceptance criteria
-
-- [ ] repeated PMID lookup for the same ID usually avoids a remote request
-- [ ] cached 404 behavior is deterministic and user-safe
-- [ ] upstream failure caching does not mask recovery for too long
-- [ ] tests cover success, 404, and transient failure paths
-
-### Files affected
-
-- `bibliography-builder.php`
-- PHPUnit coverage for PMID route behavior
-
----
-
-## REQ-P4 — Preserve frontend zero-JS architecture
-
-**Priority:** P0  
-**Effort:** Policy / review gate  
-**Risk:** High if violated  
-**Dependencies:** None
-
-### Goal
-
-Protect the plugin's strongest performance property: static saved output without a plugin-owned frontend runtime.
-
-### Scope
-
-Document and enforce that new work must not casually introduce:
-
-- a PHP `render_callback` for normal bibliography output
-- frontend re-rendering logic
-- per-page formatter work on public requests
-
-### Acceptance criteria
-
-- [ ] this requirement is referenced in future planning/review discussions
-- [ ] PRs introducing frontend runtime behavior justify it explicitly against `SPEC.md`
-
-### Files affected
-
-- planning docs, review checklists, architecture notes as needed
-
----
-
-## Phase 2 — Correctness hardening
-
-## REQ-S1 — Add stale-result guards to all async editor mutation flows
-
-**Priority:** P0  
-**Effort:** M  
-**Risk:** Medium  
-**Dependencies:** None
-
-### Goal
-
-Prevent older async editor work from overwriting newer user intent.
-
-### Scope
-
-Apply a consistent operation-token / latest-request-ref pattern to async flows in:
-
-- `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/edit.js`
-- `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/hooks/use-citation-editor-state.js`
-
-Especially cover:
-
-- paste/parse/import
-- manual add
-- delete
-- style switch
-
-### Acceptance criteria
-
-- [ ] pending async work cannot commit after cancellation
-- [ ] pending async work cannot commit after a newer operation supersedes it
-- [ ] tests cover paste-twice, style-switch-during-parse, and delete-during-formatting scenarios
-- [ ] no regressions to current focus-management behavior
-
-### Files affected
-
-- `src/edit.js`
-- `src/hooks/use-citation-editor-state.js`
-- related tests in `src/edit.test.js` and hook tests
-
----
-
-## REQ-S2 — Make the benchmark harness authoritative
-
-**Priority:** P0  
-**Effort:** S–M  
-**Risk:** Low  
-**Dependencies:** None
+-   **Priority:** P0
+-   **Effort:** S–M
+-   **Risk:** Low
+-   **Dependencies:** None
 
 ### Goal
 
@@ -330,167 +302,640 @@ Ensure the benchmark harness measures the real formatting path or fails loudly.
 
 ### Scope
 
-Update `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/benchmarks/performance-benchmark.test.js` and related docs to:
+Update
+`/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/benchmarks/performance-benchmark.test.js`
+and related docs to:
 
-- detect fallback formatting and fail or mark output invalid
-- record cold vs warm formatting separately
-- include p50/p95, not just averages
-- annotate execution environment in output
+-   detect formatter fallback and fail the benchmark, or mark output invalid and
+    non-authoritative
+-   treat console fallback warnings, `onFallback` callbacks, and missing REST
+    formatter responses as invalid benchmark conditions
+-   record cold vs warm formatting separately
+-   include p50/p95, not just averages
+-   annotate execution environment in output
+-   record whether the benchmark hit a real WordPress REST formatter, a
+    controlled test double, or fallback
+-   avoid silently writing `latest.json` / `latest.md` that look authoritative
+    when the formatter did not run
 
 ### Acceptance criteria
 
-- [ ] benchmark output clearly distinguishes parse, cold format, warm format, and style-switch work
-- [ ] fallback-based timings are not silently treated as authoritative
-- [ ] docs explain how to run and interpret the harness
-- [ ] budgets in this plan can be compared against benchmark output
+-   [ ] benchmark output clearly distinguishes parse, cold format, warm format,
+        and style-switch work
+-   [ ] fallback-based timings are not silently treated as authoritative
+-   [ ] benchmark output includes p50 and p95
+-   [ ] docs explain how to run and interpret the harness
+-   [ ] budgets in this plan can be compared against benchmark output
 
 ### Files affected
 
-- `src/benchmarks/performance-benchmark.test.js`
-- `docs/performance-benchmark-harness.md`
+-   `src/benchmarks/performance-benchmark.test.js`
+-   `docs/performance-benchmark-harness.md`
 
 ---
 
-## Phase 3 — Editor efficiency refactors
+## REQ-C1 — Define and enforce total bibliography size policy
 
-## REQ-E1 — Reduce whole-bibliography reformatting on small mutations
-
-**Priority:** P0  
-**Effort:** M–L  
-**Risk:** Medium  
-**Dependencies:** S1, S2
+-   **Priority:** P0
+-   **Effort:** S–M
+-   **Risk:** Medium
+-   **Dependencies:** B1 preferred, but not required for the policy decision
 
 ### Goal
 
-Avoid paying full-bibliography formatting cost for operations that only change one item or list order.
+Remove the hidden cliff where repeated additions can produce a bibliography
+larger than the formatter endpoint accepts.
 
 ### Scope
 
-Refactor editor flows so:
+Decide and implement one explicit policy:
 
-- **single-entry add/edit** formats only what changed when safe
-- **delete** generally re-sorts survivors without reformatting them
-- **style switch** remains a full-batch reformat
-- numeric-family edge cases preserve correctness
+1. **Conservative policy:** hard cap total citations per block at 50 until
+   larger bibliographies are benchmarked and supported; or
+2. **Expanded policy:** raise `BIBLIOGRAPHY_BUILDER_MAX_FORMAT_ITEMS` and all
+   related editor caps to a tested total size, with benchmark budgets and UX
+   warnings; or
+3. **Hybrid policy:** keep 50 as the no-warning target, allow a larger soft cap
+   with explicit editor warnings and tested formatter behavior.
+
+Implementation should update both JS editor behavior and PHP formatter
+validation so they agree.
 
 ### Acceptance criteria
 
-- [ ] add/edit/delete flows measurably reduce work versus current baseline
-- [ ] style-switch behavior remains correct
-- [ ] sort and display parity with current user-visible behavior is maintained
-- [ ] 50-entry non-style mutations improve by roughly **40–60%** in benchmarked editor-path cost
+-   [ ] adding citations to an existing 50-entry bibliography has deterministic,
+        user-facing behavior
+-   [ ] editor and REST formatter limits agree
+-   [ ] tests cover existing 49 + add 1, existing 50 + add 1, and style switch
+        at the supported maximum
+-   [ ] legacy or externally modified blocks above the supported maximum get a
+        deterministic warning/state instead of silently falling into formatter
+        fallback
+-   [ ] no path silently downgrades to raw-title fallback solely because the
+        bibliography exceeded an undocumented request cap
+-   [ ] `SPEC.md` or adjacent planning docs state the total-size policy
 
 ### Files affected
 
-- `src/edit.js`
-- `src/hooks/use-citation-editor-state.js`
-- formatting/sorting helpers as needed
+-   `src/edit.js`
+-   `src/lib/parser.js` if cap exports/messages change
+-   `bibliography-builder.php`
+-   related JS/PHP tests
+-   `SPEC.md` or documentation as needed
 
 ---
 
-## REQ-E2 — Replace expensive bibliography cache-key generation
+## REQ-C2 — Do not cache fallback formatter output as successful formatting
 
-**Priority:** P1  
-**Effort:** M  
-**Risk:** Medium  
-**Dependencies:** S2
+-   **Priority:** P0
+-   **Effort:** XS–S
+-   **Risk:** Low
+-   **Dependencies:** None
 
 ### Goal
 
-Make cache checks cheap enough that the cache itself does not become a measurable hotspot.
+Prevent transient formatter failures from poisoning the in-session
+successful-format cache.
 
 ### Scope
 
-Refactor `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/formatting/csl.js` to replace deep stable-stringify of the full bibliography payload with a cheaper fingerprint strategy, such as:
+Update
+`/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/formatting/csl.js`
+so fallback output from failed formatter requests is not stored in
+`BIBLIOGRAPHY_CACHE` as if it were a successful formatter response.
 
-- precomputed per-citation hashes
-- a normalized minimal serializer of formatting-relevant fields
-- a batch key composed from per-entry fingerprints + style context
+Possible behaviors:
+
+-   do not cache fallback output at all; or
+-   maintain a separate short-lived negative/fallback state that is never
+    returned as successful formatted output and can be retried explicitly.
 
 ### Acceptance criteria
 
-- [ ] cache hit lookup cost becomes negligible compared with formatting work
-- [ ] cache correctness is preserved across style and bibliography-context differences
-- [ ] tests cover equivalence, non-equivalence, and LRU behavior after the refactor
+-   [ ] failed formatter request returns fallback text for that call
+-   [ ] a subsequent identical request after formatter recovery calls the
+        formatter again
+-   [ ] successful formatter output is still cached
+-   [ ] tests cover failure → recovery for identical style+bibliography input
 
 ### Files affected
 
-- `src/lib/formatting/csl.js`
-- related formatter cache tests
+-   `src/lib/formatting/csl.js`
+-   `src/lib/formatting/csl.test.js`
+-   `src/lib/formatting/csl.context-cache.test.js` as needed
 
 ---
 
-## REQ-E3 — Revisit editor bundle optimization targets already identified in SPEC
+## REQ-C3 — Remove manual-entry double formatting
 
-**Priority:** P2  
-**Effort:** M  
-**Risk:** Low–Medium  
-**Dependencies:** None
+-   **Priority:** P0
+-   **Effort:** XS–S
+-   **Risk:** Low
+-   **Dependencies:** None
 
 ### Goal
 
-Trim editor-only JS without sacrificing capability.
+Avoid redundant formatter work when adding a manual citation.
 
 ### Scope
 
-Revisit `/Users/danknauss/Developer/GitHub/wp-bibliography-block/SPEC.md` bundle targets, especially:
+Current flow:
 
-- reducing `@wordpress/icons` overhead
-- assessing `buffer` polyfill cost
-- assessing `fetch-ponyfill` cost
-- keeping heavy paths dynamically imported
+1. `createManualCitationFromCsl()` formats the new single entry
+2. `handleManualAdd()` immediately formats the full merged bibliography
+
+Refactor so manual add formats exactly once:
+
+-   either build the new manual citation with `formattedText: null` and format
+    the merged bibliography once; or
+-   if the bibliography is empty, use the single-entry formatter result and skip
+    the merged reformat; otherwise use only the merged reformat.
 
 ### Acceptance criteria
 
-- [ ] updated bundle analysis documents before/after wins
-- [ ] `/build/index.js` remains under the 60 KB raw near-term budget
-- [ ] total shipped JS trends downward or holds flat as features grow
+-   [ ] manual add performs one formatter request in the common path
+-   [ ] fallback notices remain correct
+-   [ ] duplicate manual entries still short-circuit before formatting
+-   [ ] tests assert formatter call count for empty and non-empty bibliography
+        manual adds
 
 ### Files affected
 
-- `src/lib/wp-icons.js`
-- build/tooling config if needed
-- documentation updates in `SPEC.md` or performance docs as appropriate
+-   `src/lib/manual-entry.js`
+-   `src/edit.js`
+-   `src/edit.test.js`
+-   `src/lib/manual-entry.test.js` as needed
 
 ---
 
-## Phase 4 — Maintainability hardening
+## REQ-C4 — Preserve frontend zero-JS architecture
+
+-   **Priority:** P0
+-   **Effort:** Policy / review gate
+-   **Risk:** High if violated
+-   **Dependencies:** None
+
+### Goal
+
+Protect the plugin's strongest performance property: static saved output without
+a plugin-owned frontend runtime.
+
+### Scope
+
+Document and enforce that new work must not casually introduce:
+
+-   a PHP `render_callback` for normal bibliography output
+-   frontend re-rendering logic
+-   per-page formatter work on public requests
+-   public-page remote requests
+
+### Acceptance criteria
+
+-   [ ] this requirement is referenced in future planning/review discussions
+-   [ ] PRs introducing frontend runtime behavior justify it explicitly against
+        `SPEC.md`
+-   [ ] release/runtime smoke tests continue to confirm no frontend script is
+        registered for normal bibliography rendering
+
+### Files affected
+
+-   planning docs, review checklists, architecture notes as needed
+
+---
+
+## Phase 2 — Async and network hardening
+
+## REQ-S1 — Add stale-result guards to all async editor mutation flows
+
+-   **Priority:** P0
+-   **Effort:** M
+-   **Risk:** Medium
+-   **Dependencies:** None
+
+### Goal
+
+Prevent older async editor work from overwriting newer user intent.
+
+### Scope
+
+Apply a consistent latest-operation token/ref pattern to async flows in:
+
+-   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/edit.js`
+-   `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/hooks/use-citation-editor-state.js`
+
+Especially cover:
+
+-   paste/parse/import
+-   manual add
+-   delete
+-   style switch
+-   structured edit save, preserving its existing cancel guards
+
+### Acceptance criteria
+
+-   [ ] pending async work cannot commit after cancellation
+-   [ ] pending async work cannot commit after a newer operation supersedes it
+-   [ ] tests cover paste-twice, style-switch-during-parse,
+        delete-during-formatting, manual-add-during-style-switch, and
+        structured-save cancellation
+-   [ ] no regressions to current focus-management behavior
+
+### Files affected
+
+-   `src/edit.js`
+-   `src/hooks/use-citation-editor-state.js`
+-   related tests in `src/edit.test.js` and hook tests
+
+---
+
+## REQ-N1 — Cache PMID resolution responses
+
+-   **Priority:** P1
+-   **Effort:** S
+-   **Risk:** Low
+-   **Dependencies:** None
+
+### Goal
+
+Reduce network latency, upstream dependency pressure, and repeated editor
+failures for the same PMID.
+
+### Scope
+
+In
+`/Users/danknauss/Developer/GitHub/wp-bibliography-block/bibliography-builder.php`:
+
+-   cache successful PMID lookups by PMID
+-   cache 404/not-found responses separately
+-   optionally cache transient upstream failures briefly
+-   keep PMID validation numeric and fixed-endpoint only
+
+### Suggested TTLs
+
+-   success: **24h**
+-   not found: **1h**
+-   upstream failure: **5–15 min**
+
+### Acceptance criteria
+
+-   [ ] repeated PMID lookup for the same ID usually avoids a remote request
+-   [ ] cached 404 behavior is deterministic and user-safe
+-   [ ] upstream failure caching does not mask recovery for too long
+-   [ ] tests cover success, 404, and transient failure paths
+
+### Files affected
+
+-   `bibliography-builder.php`
+-   PHPUnit coverage for PMID route behavior
+
+---
+
+## REQ-N2 — Reduce avoidable DOI network work
+
+-   **Priority:** P1
+-   **Effort:** S–M
+-   **Risk:** Medium
+-   **Dependencies:** None
+
+### Goal
+
+Avoid unnecessary DOI network requests and make DOI resolution behavior more
+predictable.
+
+### Scope
+
+DOI resolution remains client-side through `citation-js` for now. Improve editor
+behavior around that constraint:
+
+-   pre-detect normalized DOI values before calling `citation-js`
+-   skip DOI resolution when the DOI is already present in existing citations or
+    earlier items in the same paste
+-   add an in-session DOI metadata cache for successful DOI resolutions where
+    safe
+-   preserve current error reporting for unresolved or malformed DOI input
+-   revisit CrossRef polite-pool configuration from `SPEC.md` and either
+    implement it or document why it is deferred
+
+### Acceptance criteria
+
+-   [ ] duplicate DOI pastes do not trigger avoidable network resolution before
+        duplicate feedback
+-   [ ] repeated DOI resolution in the same editor session can reuse cached
+        metadata
+-   [ ] tests cover duplicate DOI against existing citations and duplicate DOI
+        within one paste
+-   [ ] CrossRef polite-pool decision is implemented or documented
+
+### Files affected
+
+-   `src/lib/parser.js`
+-   `src/edit.js` if pre-dedupe belongs at the editor boundary
+-   parser/edit tests
+-   `SPEC.md` or planning notes as needed
+
+---
+
+## Phase 3 — Footprint and safe caching
+
+## REQ-P1 — Prune release-package dead weight
+
+-   **Priority:** P0
+-   **Effort:** XS–S
+-   **Risk:** Low
+-   **Dependencies:** None
+
+### Goal
+
+Reduce shipped plugin size without changing runtime behavior.
+
+### Scope
+
+Update
+`/Users/danknauss/Developer/GitHub/wp-bibliography-block/scripts/package-release.sh`
+to:
+
+-   stop copying `composer.lock`
+-   prune non-runtime files from `vendor/` more aggressively
+-   explicitly remove known large vendor artifacts such as
+    `vendor/seboettg/collection/class-diagram.png`
+-   prune vendor docs/examples/images/tests/CI config where license obligations
+    are still preserved
+-   verify expected package contents explicitly
+
+### Acceptance criteria
+
+-   [ ] `composer.lock` is not present in the staged release directory
+-   [ ] known non-runtime vendor docs/examples/images are removed
+-   [ ] release zip is reduced from ~588 KB to **< 450 KB**
+-   [ ] unpacked release is reduced materially, with any retained language
+        assets counted separately in reporting
+-   [ ] release smoke checks remain green
+-   [ ] required license/notice files remain present
+
+### Files affected
+
+-   `scripts/package-release.sh`
+-   release verification docs/checklists as needed
+
+---
+
+## REQ-P2 — Add cautious server-side formatter caching
+
+-   **Priority:** P1
+-   **Effort:** S–M
+-   **Risk:** Medium
+-   **Dependencies:** B1, C1, C2 preferred
+
+### Goal
+
+Avoid repeating expensive citeproc work for identical style + bibliography
+inputs without creating unbounded `wp_options` churn.
+
+### Scope
+
+In
+`/Users/danknauss/Developer/GitHub/wp-bibliography-block/bibliography-builder.php`:
+
+-   derive a stable cache key from:
+    -   style key
+    -   locale
+    -   normalized CSL payload hash
+    -   formatter/version context if needed
+-   cache successful formatted bibliography arrays
+-   prefer persistent object cache when available
+-   make transient fallback explicitly size-limited, short-lived, filterable, or
+    opt-in
+-   do not cache formatter failures as successful responses
+-   default TTL: **1 hour** for successful object-cache entries; shorter or
+    disabled by default for transient fallback unless explicitly accepted
+
+### Acceptance criteria
+
+-   [ ] identical repeat formatting requests hit cache when caching is available
+-   [ ] cache miss path still returns identical output to current behavior
+-   [ ] warm-path formatter requests are measurably faster than cold-path
+        requests in an authoritative benchmark
+-   [ ] failures and too-many-items responses are not cached as success
+-   [ ] transient fallback cannot create unbounded dynamic rows for arbitrary
+        payloads
+-   [ ] tests cover cold, warm, failure, and transient-disabled paths
+
+### Files affected
+
+-   `bibliography-builder.php`
+-   PHP tests for formatter endpoints/services
+
+---
+
+## REQ-P3 — Replace expensive and memory-heavy JS bibliography cache keys
+
+-   **Priority:** P1
+-   **Effort:** M
+-   **Risk:** Medium
+-   **Dependencies:** B1, C2
+
+### Goal
+
+Make client-side cache checks cheap enough that the cache itself does not become
+a measurable CPU or memory hotspot.
+
+### Scope
+
+Refactor
+`/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/formatting/csl.js`
+to replace deep stable-stringify of the full bibliography payload with a cheaper
+fingerprint strategy that avoids retaining full-payload key strings, such as:
+
+-   precomputed per-citation hashes
+-   a normalized minimal serializer of formatting-relevant fields
+-   a batch key composed from per-entry fingerprints + style context
+-   an approximate byte budget or other memory-aware eviction rule in addition
+    to the existing entry-count LRU cap
+
+### Acceptance criteria
+
+-   [ ] cache hit lookup cost becomes negligible compared with formatting work
+-   [ ] cache memory remains bounded for repeated distinct supported-size
+        bibliographies
+-   [ ] cache correctness is preserved across style, locale, order, and
+        bibliography-context differences
+-   [ ] fallback results are not treated as successful cache hits
+-   [ ] tests cover equivalence, non-equivalence, order sensitivity,
+        style/locale sensitivity, failure recovery, and LRU behavior
+
+### Files affected
+
+-   `src/lib/formatting/csl.js`
+-   related formatter cache tests
+
+---
+
+## Phase 4 — Editor efficiency refactors
+
+## REQ-E1 — Reduce whole-bibliography reformatting only where style-context safe
+
+-   **Priority:** P1
+-   **Effort:** M–L
+-   **Risk:** Medium–High
+-   **Dependencies:** B1, C1, C2, S1
+
+### Goal
+
+Avoid paying full-bibliography formatting cost for operations that do not
+require whole-bibliography citeproc context, while preserving
+same-author/same-year suffixes, disambiguation, numeric-family behavior, and
+user-visible parity.
+
+### Scope
+
+Refactor editor flows with explicit safety rules:
+
+-   **style switch** remains full-batch reformat
+-   **author-date/notes add/edit/delete** may require full-batch formatting when
+    citation-context-sensitive output can change
+-   **delete** may avoid reformat only when a safe rule proves survivors'
+    formatted output is unchanged
+-   **numeric family** must preserve user order and numbering/list semantics
+-   **displayOverride** entries should not have visible text overwritten, but
+    their CSL still participates in metadata and context where relevant
+
+### Acceptance criteria
+
+-   [ ] each optimized path documents why whole-list reformat is safe to skip
+-   [ ] tests cover same-author/same-year add/delete/edit cases where survivors
+        may need suffix changes
+-   [ ] style-switch behavior remains correct
+-   [ ] sort and display parity with current user-visible behavior is maintained
+-   [ ] benchmarked editor-path cost improves only after correctness tests prove
+        safety
+
+### Files affected
+
+-   `src/edit.js`
+-   `src/hooks/use-citation-editor-state.js`
+-   formatting/sorting helpers as needed
+-   sort/coordination fixtures as needed
+
+---
+
+## REQ-E2 — Revisit editor bundle optimization targets
+
+-   **Priority:** P2
+-   **Effort:** M
+-   **Risk:** Low–Medium
+-   **Dependencies:** None
+
+### Goal
+
+Trim editor-only JS without sacrificing capability or reintroducing fragile
+build behavior.
+
+### Scope
+
+Refresh bundle analysis and revisit targets from `SPEC.md`, especially:
+
+-   `@wordpress/icons` import behavior in
+    `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/wp-icons.js`
+-   `buffer` polyfill cost from citation-js internals
+-   `fetch-ponyfill` cost from citation-js internals
+-   preserving dynamic imports for DOI/BibTeX/export paths
+
+### Acceptance criteria
+
+-   [ ] updated bundle analysis documents before/after raw and gzip sizes
+-   [ ] `/build/index.js` remains under the 60 KB raw near-term budget unless
+        consciously revised
+-   [ ] total shipped JS trends downward or has a documented reason to hold flat
+-   [ ] no block-registration regression from icon import changes
+
+### Files affected
+
+-   `src/lib/wp-icons.js`
+-   build/tooling config if needed
+-   documentation updates in `SPEC.md` or performance docs as appropriate
+
+---
+
+## REQ-E3 — Add supported-size performance regression fixtures
+
+-   **Priority:** P1
+-   **Effort:** S–M
+-   **Risk:** Low
+-   **Dependencies:** B1, C1
+
+### Goal
+
+Make the supported total bibliography size a tested performance behavior instead
+of an assumption.
+
+### Scope
+
+Add deterministic benchmark/test fixtures for the chosen total-size policy:
+
+-   10 entries
+-   25 entries
+-   50 entries
+-   the maximum supported total size if above 50
+-   edge cases around same-author/same-year context
+
+### Acceptance criteria
+
+-   [ ] benchmark fixtures match the supported-size policy
+-   [ ] results report parse, cold format, warm format, style switch, add, edit,
+        and delete paths
+-   [ ] fallback invalidates benchmark authority
+-   [ ] documentation explains what sizes are officially supported vs.
+        experimental
+
+### Files affected
+
+-   `src/benchmarks/fixtures/`
+-   `src/benchmarks/performance-benchmark.test.js`
+-   `docs/performance-benchmark-harness.md`
+
+---
+
+## Phase 5 — Maintainability hardening
 
 ## REQ-M1 — Split `src/edit.js` by responsibility
 
-**Priority:** P1  
-**Effort:** M  
-**Risk:** Medium  
-**Dependencies:** E1
+-   **Priority:** P1
+-   **Effort:** M
+-   **Risk:** Medium
+-   **Dependencies:** S1 and C3 preferred; E1 if refactoring flow logic first
 
 ### Goal
 
-Reduce the biggest editor hotspot into smaller units that are easier to reason about, test, and optimize.
+Reduce the biggest editor hotspot into smaller units that are easier to reason
+about, test, and optimize.
 
 ### Scope
 
-Break `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/edit.js` into smaller hooks/modules for:
+Break `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/edit.js` into
+smaller hooks/modules for:
 
-- import flow
-- manual entry flow
-- list actions
-- clipboard/export
-- UI-only composition
+-   import flow
+-   manual entry flow
+-   list actions
+-   clipboard/export
+-   UI-only composition
 
 ### Acceptance criteria
 
-- [ ] `src/edit.js` drops materially below its current size
-- [ ] behavior and tests remain stable
-- [ ] new module boundaries are coherent and documented in code comments or adjacent docs
+-   [ ] `src/edit.js` drops materially below its current size
+-   [ ] behavior and tests remain stable
+-   [ ] new module boundaries are coherent and documented in code comments or
+        adjacent docs
+-   [ ] async-operation guard ownership is clear after the split
 
 ---
 
 ## REQ-M2 — Split `bibliography-builder.php` into focused modules
 
-**Priority:** P1  
-**Effort:** M  
-**Risk:** Medium  
-**Dependencies:** P2, P3
+-   **Priority:** P1
+-   **Effort:** M
+-   **Risk:** Medium
+-   **Dependencies:** P2 and N1 preferred
 
 ### Goal
 
@@ -500,25 +945,27 @@ Reduce future fragility in the plugin bootstrap/runtime layer.
 
 Extract focused units for:
 
-- REST route registration/callbacks
-- formatter service/caching
-- bibliography extraction helpers
-- asset/bootstrap concerns
+-   REST route registration/callbacks
+-   formatter service/caching
+-   PMID resolver/caching
+-   bibliography extraction helpers
+-   asset/bootstrap concerns
 
 ### Acceptance criteria
 
-- [ ] core PHP logic is separated by responsibility
-- [ ] formatter and REST code become easier to unit/integration test
-- [ ] no public behavior changes
+-   [ ] core PHP logic is separated by responsibility
+-   [ ] formatter, PMID, and REST code become easier to unit/integration test
+-   [ ] no public behavior changes
+-   [ ] Composer/autoload behavior remains compatible with release packaging
 
 ---
 
 ## REQ-M3 — Modularize free-text parsing heuristics
 
-**Priority:** P2  
-**Effort:** M–L  
-**Risk:** Medium  
-**Dependencies:** None
+-   **Priority:** P2
+-   **Effort:** M–L
+-   **Risk:** Medium
+-   **Dependencies:** None
 
 ### Goal
 
@@ -526,45 +973,105 @@ Keep parser growth from turning into a correctness and maintenance bottleneck.
 
 ### Scope
 
-Split `/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/free-text-parser.js` into smaller heuristic modules by concern, such as:
+Split
+`/Users/danknauss/Developer/GitHub/wp-bibliography-block/src/lib/free-text-parser.js`
+into smaller heuristic modules by concern, such as:
 
-- author parsing
-- title/container extraction
-- journal/article rules
-- book rules
-- cleanup/normalization
-- warning/confidence generation
+-   author parsing
+-   title/container extraction
+-   journal/article rules
+-   book rules
+-   review/thesis/webpage rules
+-   cleanup/normalization
+-   warning/confidence generation
 
 ### Acceptance criteria
 
-- [ ] parser heuristics are easier to test in isolation
-- [ ] new parser work can land with targeted fixtures instead of touching one large file
-- [ ] existing supported-input behavior remains stable
+-   [ ] parser heuristics are easier to test in isolation
+-   [ ] new parser work can land with targeted fixtures instead of touching one
+        large file
+-   [ ] existing supported-input behavior remains stable
+
+---
+
+## REQ-M4 — Track citeproc-php PHP-version compatibility
+
+-   **Priority:** P1
+-   **Effort:** XS–S initially
+-   **Risk:** Medium over time
+-   **Dependencies:** None
+
+### Goal
+
+Prevent formatter stability surprises as PHP versions advance.
+
+### Scope
+
+Current PHPUnit runs pass, but PHP 8.5 reports deprecations from
+`seboettg/citeproc-php v2.7.1`. Track this as a dependency stability item:
+
+-   check whether newer `seboettg/citeproc-php` releases resolve deprecations
+-   if not, decide whether to patch, fork, suppress in tests, or constrain
+    supported PHP versions
+-   keep runtime matrix coverage aligned with plugin support claims
+
+### Acceptance criteria
+
+-   [ ] dependency compatibility decision is documented
+-   [ ] PHP deprecations are either resolved, suppressed with rationale, or
+        tracked as accepted debt
+-   [ ] release checklist includes a PHP-version compatibility check for
+        formatter dependencies
+
+### Files affected
+
+-   `composer.json` / `composer.lock` if updating dependency
+-   PHP tests / runtime matrix docs as needed
+-   release checklist docs
 
 ---
 
 ## Cross-cutting implementation notes
 
-### Preserve existing safety constraints
+### Preserve existing safety constraints unless explicitly revised
 
 Do not relax these without a separate architectural decision:
 
-- 50-entry paste cap
-- 1 MB payload cap
-- static saved HTML output
-- output sanitization at render/save boundaries per `SPEC.md`
+-   1 MB paste payload cap
+-   static saved HTML output
+-   output sanitization at render/save boundaries per `SPEC.md`
+-   fixed PMID proxy URL and numeric PMID validation
+-   no normal frontend runtime JS
+
+The 50-entry paste cap and 50-item formatter cap may be revised only through
+REQ-C1 with explicit benchmark and UX coverage.
+
+### Treat fallback as degraded state, not normal success
+
+Fallback citation text is useful for graceful editor behavior, but it must not
+be confused with successful formatted output in caches, benchmarks, or success
+notices.
 
 ### Prefer explicit “needs review” states over speculative parsing
 
-For free-text parsing, a conservative warning is preferable to a wrong citation silently accepted as correct.
+For free-text parsing, a conservative warning is preferable to a wrong citation
+silently accepted as correct.
 
 ### Treat performance improvements as testable behavior
 
 Where possible, accompany changes with:
 
-- benchmark-harness updates
-- regression tests for cache correctness
-- tests that verify no stale async state can commit
+-   benchmark-harness updates
+-   regression tests for cache correctness
+-   tests that verify no stale async state can commit
+-   fixtures that prove style-context-sensitive output remains correct
+
+### Be cautious with WordPress transients for dynamic full-payload caches
+
+Object cache is appropriate for formatter responses when available. Transients
+for arbitrary full-bibliography payloads can create dynamic `wp_options` rows on
+hosts without persistent object cache. If transient fallback is used, make it
+bounded, short-lived, filterable, and tested.
 
 ---
 
@@ -572,30 +1079,49 @@ Where possible, accompany changes with:
 
 If this plan is moved into the tracker, create tickets in roughly this order:
 
-1. REQ-P1 — Release package pruning
-2. REQ-P2 — Formatter response caching
-3. REQ-P3 — PMID caching
-4. REQ-S2 — Benchmark harness hardening
-5. REQ-S1 — Async stale-result guards
-6. REQ-E1 — Reduce whole-list reformatting
-7. REQ-E2 — Cheaper cache keys
-8. REQ-M1 — Split `edit.js`
-9. REQ-M2 — Split `bibliography-builder.php`
-10. REQ-M3 — Modularize free-text parser
-11. REQ-E3 — Editor bundle optimization pass
+1. REQ-B1 — Benchmark harness hardening
+2. REQ-C1 — Total bibliography size policy
+3. REQ-C2 — Do not cache fallback formatter output
+4. REQ-C3 — Remove manual-entry double formatting
+5. REQ-C4 — Preserve frontend zero-JS architecture
+6. REQ-S1 — Async stale-result guards
+7. REQ-N1 — PMID caching
+8. REQ-N2 — Avoidable DOI network work
+9. REQ-P1 — Release package pruning
+10. REQ-P2 — Cautious server-side formatter caching
+11. REQ-P3 — Cheaper, bounded JS cache keys
+12. REQ-E1 — Style-context-safe whole-list optimization
+13. REQ-E3 — Supported-size performance fixtures
+14. REQ-E2 — Editor bundle optimization pass
+15. REQ-M1 — Split `edit.js`
+16. REQ-M2 — Split `bibliography-builder.php`
+17. REQ-M3 — Modularize free-text parser
+18. REQ-M4 — Track citeproc-php PHP-version compatibility
 
 ---
 
 ## Open questions
 
-1. Should formatter caching live entirely in PHP, or should the JS-side cache strategy be revised in the same sprint?
-2. Are package-size budgets strict enough to justify release CI checks immediately, or should they begin as reporting-only?
-3. For non-style mutations, is exact current batch-format parity required in all cases, or can some flows move to per-entry formatting if rendered output remains equivalent?
+1. Should the 1.x product support more than 50 total entries per block, or
+   should 50 be the hard total cap until larger bibliographies are benchmarked?
+2. If total support rises above 50, what is the first official size target: 100,
+   250, or 500 entries?
+3. Should full-bibliography formatter caching use transients at all when no
+   persistent object cache is available?
+4. Should DOI resolution remain fully client-side, or should a future server
+   proxy provide cache, timeout, and polite-pool control?
+5. Are release package budgets strict enough to justify CI gates immediately, or
+   should they begin as reporting-only?
+6. What approximate byte budget should the in-session JS formatter cache use
+   after replacing full-payload keys?
+7. For non-style mutations, which styles and metadata shapes are safe for
+   per-entry formatting without whole-bibliography citeproc context?
 
 ---
 
 ## Revision history
 
-| Date | Change | Author |
-| --- | --- | --- |
-| 2026-05-08 | Initial draft created from repository audit and remediation recommendations | Codex |
+| Date       | Change                                                                                                                                                                                                                                          | Author |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 2026-05-08 | Initial draft created from repository audit and remediation recommendations                                                                                                                                                                     | Codex  |
+| 2026-05-09 | Revised priority order and requirements based on deeper performance/stability review: total-size cliff, fallback cache poisoning, manual double-formatting, DOI/PMID network risks, cautious formatter caching, and PHP dependency deprecations | Codex  |
