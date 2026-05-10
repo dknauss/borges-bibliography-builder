@@ -19,7 +19,7 @@ The **Borges Bibliography Builder** transforms pasted DOI(s), PubMed/PMID record
 
 **One-click import.** Paste a DOI and CrossRef resolves the metadata instantly. Paste a PubMed/PMID identifier and Borges resolves it through an authenticated WordPress REST proxy to NCBI/PMC citation metadata. Paste BibTeX or formatted citations for books, articles, chapters, webpages, reviews, and theses.
 
-**Nine citation styles.** Choose from Chicago Notes-Bibliography, Chicago Author-Date, APA 7, MLA 9, Harvard, Vancouver, IEEE, OSCOLA, and **ABNT (Associação Brasileira de Normas Técnicas / NBR 6023:2018)** — all with automatic sorting per style rules.
+**Nine citation styles.** Choose from Chicago Notes-Bibliography, Chicago Author-Date, APA 7, MLA 9, Harvard, Vancouver, IEEE, OSCOLA, and ABNT (Associação Brasileira de Normas Técnicas / NBR 6023:2018) — all with automatic sorting per style rules.
 
 **Portable.** Static HTML output survives plugin deactivation. No shortcodes. No database tables.
 
@@ -29,16 +29,17 @@ The **Borges Bibliography Builder** transforms pasted DOI(s), PubMed/PMID record
 
 **Translation-ready.** Plugin interface strings use the `borges-bibliography-builder` text domain, and official WordPress.org language packs are generated as community translations are approved on translate.wordpress.org.
 
-= What's new in 1.2.0 =
+= What's new in 1.3.0 =
 
-* **PubMed/PMID import** resolves PubMed records through an authenticated REST proxy.
-* **BibLaTeX export** supports LaTeX/Biber workflows alongside CSL-JSON, BibTeX, and RIS.
-* **Numeric style reordering** lets IEEE and Vancouver bibliographies follow first-citation order with visible controls and Alt+Arrow keyboard movement.
-* **ABNT support is explicit**: the ABNT option targets Associação Brasileira de Normas Técnicas bibliography formatting under NBR 6023:2018.
+* **Explicit 50-citation cap** — bibliographies now show an inline editor warning as entries approach the 50-entry limit, replacing a silent formatter failure at 51 entries.
+* **Async stale-result protection** — all editor mutation flows (paste, manual add, delete, style switch, and structured edit) now discard results from superseded in-flight format requests.
+* **Smaller release package** — non-runtime vendor documentation and images are pruned from the zip, reducing download weight.
+* **Network efficiency** — successful PMID proxy responses are cached and concurrent DOI resolution requests are deduplicated to reduce avoidable network traffic.
 
-= Recent accessibility releases =
+= Earlier release highlights =
 
-Version 1.1.0 added optional Block Accessibility Checks integration, and 1.1.1 restored reliable BAC registration plus visible keyboard focus on editor row actions.
+* **1.2.0** — PubMed/PMID import through an authenticated REST proxy, BibLaTeX export, manual reordering for IEEE and Vancouver styles, and full-bibliography reformat parity across all nine styles.
+* **1.1.x** — Optional Block Accessibility Checks integration and restored visible keyboard focus on editor row actions.
 
 == Installation ==
 
