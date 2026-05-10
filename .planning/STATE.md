@@ -2,20 +2,16 @@
 
 ## Current Focus
 
-1. Post-launch GSD Phase 2 (performance/stability remediation) is committed
-   in `3d5d3de` (stabilize bibliography formatter workflows) and `539b6b3`
-   (address stabilization review notes). The working tree is clean and HEAD
-   is 9 commits ahead of the `v1.2.0` tag.
-2. The final narrow maintainability slice extracted manual-entry
-   state/mutation behavior from `edit.js` without changing UI markup or moving
-   the shared async-operation guard out of the editor shell.
-3. Keep whole-bibliography reformat optimization conservative: numeric deletion
+1. **v1.3.0 is live on WordPress.org.** Phase 3 (release prep) is complete.
+   The GitHub Release was published manually, triggering `wp-deploy.yml` SVN
+   deploy. WordPress.org plugin page now shows version 1.3.0.
+2. Keep whole-bibliography reformat optimization conservative: numeric deletion
    is the only confirmed safe no-reformat path; author-date/notes paths remain
    full-list formatted.
-4. Track refreshed build footprint from the benchmark report while maintaining
+3. Track refreshed build footprint from the benchmark report while maintaining
    frontend zero-JS for saved output.
-5. Decide whether to cut a fresh release (recommended `1.3.0`) before resuming
-   frontend Cite/Export, writable API/Abilities, and translation expansion.
+4. Next: plan and execute Phase 4 (Frontend Cite/Export affordances) or the
+   large-bibliography benchmark spike, per roadmap priority order.
 
 ## Current Priority Order
 
@@ -172,22 +168,16 @@ Recent work completed or in final verification includes:
 
 ## Active Concerns
 
--   **Release decision** — HEAD is 9 commits ahead of `v1.2.0`. The
-    user-visible Phase 2 changes (explicit 50-citation total cap, async stale
-    protection, manual-entry single-format path, smaller release zip) warrant
-    a `1.3.0` minor bump. Alternatively, a `1.2.1` patch is defensible if
-    framing the 50-cap as "fix silent 51-cliff failure."
+-   **v1.3.0 is live** — WordPress.org plugin page shows 1.3.0. GitHub Release
+    published manually; `wp-deploy.yml` SVN deploy triggered and confirmed.
+    Release baseline is now `v1.3.0`.
 -   **Performance plan vs. implementation** — the remediation plan and GSD
     Phase 2 are now consistent with what is in the committed tree;
     correctness, cache hardening, measured optimization, and the scoped
     maintainability items are landed.
--   **WordPress.org launch** — `1.0.0` is live on WordPress.org. Next
-    operational step is post-launch polish and hotfix readiness while keeping
-    the GitHub `v1.0.0` release asset and WordPress.org package aligned.
--   **Release baseline vs. head** — `v1.0.0` has been retagged to the current
-    `main` release baseline after the release-action Node 24 update and
-    coverage-test follow-up. Avoid further retagging unless a real release
-    blocker or WordPress.org deployment correction requires it.
+-   **Release baseline vs. head** — `v1.3.0` is the current release baseline.
+    Avoid retagging unless a real release blocker or WordPress.org deployment
+    correction requires it.
 -   **GitHub repository rename fallout** — after the rename to
     `dknauss/borges-bibliography-builder`, confirm badges, release links,
     Codecov, Playground, and GitHub Actions redirects resolve from the canonical
@@ -249,18 +239,16 @@ maintainability splits all landed in `3d5d3de` and `539b6b3`.
 
 Current next-task sequence:
 
-1. **Cut release `1.3.0`** — bump version, update changelog, tag, and let
-   the GitHub release deploy to WordPress.org SVN.
+1. ~~**Cut release `1.3.0`**~~ — **Done.** WordPress.org shows 1.3.0.
 2. **Optional deeper splits only if justified** — delete/list mutation,
    formatter/REST route helpers, and citation-type parser modules are follow-up
    candidates, not Phase 2 blockers.
-3. **Resume feature backlog after release** — frontend Cite/Export affordances,
+3. **Resume feature backlog** — frontend Cite/Export affordances (Phase 4),
    writable REST/Abilities design, and translation expansion.
 4. **Keep operational hygiene active** — CI/runtime matrix, release package,
    WordPress.org assets, and citeproc-php compatibility monitoring.
 
-Run `/gsd:progress` after the release tag to choose the next feature or
-operational track.
+Run `/gsd:progress` to choose the next feature or operational track.
 
 ## Accumulated Context
 
@@ -271,3 +259,5 @@ operational track.
 -   Post-launch GSD Phase 2 added: performance and stability remediation, led
     by the hidden 51-entry formatter cliff (completed, committed in `3d5d3de`
     and `539b6b3`)
+-   Post-launch GSD Phase 3 added: 1.3.0 release prep (completed — v1.3.0
+    live on WordPress.org as of 2026-05-10)
