@@ -245,7 +245,7 @@ test.describe('Bibliography block accessibility gate', () => {
 
 		await test.step('set up a post with the Bibliography block', async () => {
 			await page.goto('/wp-admin/post-new.php');
-			await page.waitForLoadState('networkidle');
+			await page.waitForLoadState('domcontentloaded');
 			await dismissEditorOverlay(page);
 			await expect(
 				page.getByRole('button', {
