@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No changes yet.
+### Added
+
+- Bibliographies between 100 and 199 citations now show a dismissible editor notice warning that formatting may be slower on shared hosting.
+
+### Changed
+
+- Per-bibliography hard cap raised from 50 to 200 citations. The 50-entry per-paste limit is unchanged.
 
 ## [1.2.0] - 2026-05-08
 
