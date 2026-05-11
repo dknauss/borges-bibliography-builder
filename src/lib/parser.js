@@ -18,7 +18,8 @@ const DOI_ONLY_REGEX =
 	/^(?:(?:https?:\/\/)?(?:dx\.)?doi\.org\/|(?:https?:\/\/)?doi:)?10\.\d{4,}\/[^\s]+$/i;
 const BIBTEX_REGEX = /@\w+\{/;
 const PMID_REGEX = /^PMID:\s*(\d{1,8})$/i;
-const NCBI_CSL_API = 'https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=';
+const NCBI_CSL_API =
+	'https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=';
 const MAX_ENTRIES_PER_PASTE = 50;
 const MAX_INPUT_SIZE = 1024 * 1024; // 1 MB
 const PARSE_CONCURRENCY = 4;
@@ -391,15 +392,18 @@ function formatBackendParseError(format, err) {
 /**
  * Parse pasted input into an array of CSL-JSON citation objects.
  *
- * @param {string}  input                     Raw pasted text.
- * @param {string}  styleKey                  Style key for derived formatting.
- * @param {Object}  [options={}]              Parse options.
- * @param {boolean} [options.deferFormatting] When true (default), leave
- *                                            `formattedText` empty so callers
- *                                            can decide if and when to format.
- *                                            When false, format entries inside
- *                                            the parser for legacy/explicit
- *                                            call sites.
+ * @param {string}   input                     Raw pasted text.
+ * @param {string}   styleKey                  Style key for derived formatting.
+ * @param {Object}   [options={}]              Parse options.
+ * @param {boolean}  [options.deferFormatting] When true (default), leave
+ *                                             `formattedText` empty so callers
+ *                                             can decide if and when to format.
+ *                                             When false, format entries inside
+ *                                             the parser for legacy/explicit
+ *                                             call sites.
+ * @param {Function} [options.fetchFn]         Fetch implementation; defaults to
+ *                                             the global fetch. Override in tests
+ *                                             to avoid real network calls.
  * @return {Promise<Object>} { entries: Array, errors: Array, truncated: boolean }
  *
  * @since 0.1.0
@@ -407,7 +411,7 @@ function formatBackendParseError(format, err) {
 export async function parsePastedInput(
 	input,
 	styleKey = DEFAULT_CITATION_STYLE,
-	{ deferFormatting = true, fetchFn = globalThis.fetch } = {}
+	{ deferFormatting = true, fetchFn = global.fetch } = {}
 ) {
 	const errors = [];
 	let truncated = false;

@@ -638,6 +638,8 @@ describe('save', () => {
 		);
 
 		expect(markup).toContain('https://example.org/work');
-		expect(markup).toContain('aria-label="My Work — https://example.org/work"');
+		expect(markup).toContain(
+			'aria-label="My Work — https://example.org/work"'
+		);
 	});
 });

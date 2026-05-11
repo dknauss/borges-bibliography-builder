@@ -86,10 +86,9 @@ export function renderBibliographySave(
 											'borges-bibliography-builder'
 										);
 									const content = linkVisibleUrls
-										? splitTextIntoLinkParts(
-												segment.text,
-												{ linkLabel }
-										  ).map((part, partIndex) =>
+										? splitTextIntoLinkParts(segment.text, {
+												linkLabel,
+										  }).map((part, partIndex) =>
 												part.link ? (
 													<a
 														key={`${citation.id}-${index}-${partIndex}`}

@@ -1185,12 +1185,16 @@ describe('PMID input resolution', () => {
 			.mockResolvedValueOnce({
 				ok: true,
 				status: 200,
-				json: jest.fn().mockResolvedValue({ ...SAMPLE_CSL, PMID: '11111111' }),
+				json: jest
+					.fn()
+					.mockResolvedValue({ ...SAMPLE_CSL, PMID: '11111111' }),
 			})
 			.mockResolvedValueOnce({
 				ok: true,
 				status: 200,
-				json: jest.fn().mockResolvedValue({ ...SAMPLE_CSL, PMID: '22222222' }),
+				json: jest
+					.fn()
+					.mockResolvedValue({ ...SAMPLE_CSL, PMID: '22222222' }),
 			});
 
 		const result = await parsePastedInput(
