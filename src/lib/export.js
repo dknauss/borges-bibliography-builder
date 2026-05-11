@@ -328,9 +328,13 @@ export async function downloadBiblatexExport(
 
 	return downloadTextExport(
 		{
-			content: await buildBiblatexExportContent(citations, citationStyle, {
-				CiteCtor,
-			}),
+			content: await buildBiblatexExportContent(
+				citations,
+				citationStyle,
+				{
+					CiteCtor,
+				}
+			),
 			filename: BIBLATEX_EXPORT_FILENAME,
 			mimeType: BIBLATEX_EXPORT_MIME_TYPE,
 		},

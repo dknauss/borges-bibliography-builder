@@ -59,8 +59,8 @@ function splitTrailingUrlPunctuation(url) {
 /**
  * Split text into segments with URL detection for linking.
  *
- * @param {string} text              Text to parse.
- * @param {Object} [options]         Options.
+ * @param {string} text                Text to parse.
+ * @param {Object} [options]           Options.
  * @param {string} [options.linkLabel] Accessible label for link segments.
  * @return {Array<{text: string, href?: string, link: boolean, label?: string}>} Segments.
  *

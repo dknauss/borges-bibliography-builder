@@ -309,10 +309,9 @@ describe('formatting helpers', () => {
 	});
 
 	it('includes a label field on link segments when linkLabel is provided', () => {
-		const parts = splitTextIntoLinkParts(
-			'See https://example.org/foo',
-			{ linkLabel: 'Some Title' }
-		);
+		const parts = splitTextIntoLinkParts('See https://example.org/foo', {
+			linkLabel: 'Some Title',
+		});
 		const linkPart = parts.find((p) => p.link);
 		expect(linkPart).toBeDefined();
 		expect(linkPart.label).toBe('Some Title');
