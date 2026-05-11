@@ -1,6 +1,8 @@
 /* eslint-disable jest/no-done-callback */
 const { test, expect } = require('@playwright/test');
 
+const DOI_SAMPLE = '10.1038/s41586-020-2649-2';
+
 function getPluginRow(page) {
 	return page.locator(
 		'tr[data-plugin="borges-bibliography-builder/bibliography-builder.php"]:not(.plugin-update-tr)'
@@ -99,6 +101,48 @@ async function openInserterAndSearch(page, query) {
 	await inserterSearch.fill(query);
 }
 
+async function getEditorFrame(page) {
+	const editorIframe = page.frameLocator('iframe[name="editor-canvas"]');
+	const iframeBody = editorIframe.locator('body');
+
+	if (await iframeBody.isVisible({ timeout: 3000 }).catch(() => false)) {
+		return editorIframe;
+	}
+
+	return page;
+}
+
+async function insertBibliographyBlock(page) {
+	await page.waitForFunction(
+		() =>
+			window.wp?.blocks?.getBlockType(
+				'bibliography-builder/bibliography'
+			) &&
+			window.wp?.blocks?.createBlock &&
+			window.wp?.data?.dispatch('core/block-editor')?.insertBlock,
+		null,
+		{ timeout: 20_000 }
+	);
+
+	await page.evaluate(() => {
+		const block = window.wp.blocks.createBlock(
+			'bibliography-builder/bibliography'
+		);
+		const editor = window.wp.data.dispatch('core/block-editor');
+		editor.insertBlock(block);
+		editor.selectBlock(block.clientId);
+	});
+
+	const editorFrame = await getEditorFrame(page);
+	await expect(
+		editorFrame
+			.locator('.wp-block-bibliography-builder-bibliography')
+			.first()
+	).toBeVisible({ timeout: 30_000 });
+
+	return editorFrame;
+}
+
 test('bibliography block is discoverable in the editor inserter', async ({
 	page,
 }) => {
@@ -115,4 +159,34 @@ test('bibliography block is discoverable in the editor inserter', async ({
 	).toBeVisible({ timeout: 20_000 });
 	await openInserterAndSearch(page, 'Bibliography');
 	await expect(page.getByText('Bibliography').first()).toBeVisible();
+});
+
+test('bibliography block imports a DOI in the Playground editor', async ({
+	page,
+}) => {
+	test.setTimeout(90_000);
+
+	await ensurePluginActivated(page);
+	await page.goto('/wp-admin/post-new.php');
+	await page.waitForLoadState('domcontentloaded');
+	await dismissEditorOverlay(page);
+
+	const editorFrame = await insertBibliographyBlock(page);
+	const textarea = editorFrame
+		.locator('#bibliography-builder-paste-input')
+		.first();
+	await expect(textarea).toBeVisible({ timeout: 20_000 });
+	await textarea.fill(DOI_SAMPLE);
+
+	await editorFrame.getByRole('button', { name: /^Add$/i }).click();
+
+	const entryText = editorFrame
+		.locator('.bibliography-builder-entry-text')
+		.first();
+	await expect(entryText).toBeVisible({ timeout: 45_000 });
+	await expect
+		.poll(async () => (await entryText.textContent())?.trim() || '', {
+			timeout: 45_000,
+		})
+		.not.toBe('');
 });
