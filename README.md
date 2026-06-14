@@ -2,7 +2,7 @@
 
 ![](.wordpress-org/banner-1544x500.png)
 
-[![License: GPL v2+](https://img.shields.io/badge/License-GPLv2%2B-blue.svg)](https://www.gnu.org/licenses/gpl-2.0.html) [![Latest Release](https://img.shields.io/github/v/release/dknauss/Borges)](https://github.com/dknauss/Borges/releases) [![Security Policy](https://img.shields.io/badge/security-policy-4c1)](SECURITY.md)
+[![License: GPL v2+](https://img.shields.io/badge/License-GPLv2%2B-blue.svg)](https://www.gnu.org/licenses/gpl-2.0.html) [![Latest Release](https://img.shields.io/github/v/release/dknauss/Borges)](https://github.com/dknauss/Borges/releases) [![Security Policy](https://img.shields.io/badge/security-policy-4c1)](SECURITY.md) [![Docs](https://img.shields.io/badge/docs-available-0a7ea4.svg)](docs/)
 [![WordPress tested](https://img.shields.io/badge/WordPress-6.4%E2%80%937.0-21759b.svg?logo=wordpress&logoColor=white)](https://github.com/dknauss/Borges/actions/workflows/runtime-matrix.yml)
 [![PHP tested](https://img.shields.io/badge/PHP-7.4%E2%80%938.4-777bb4.svg?logo=php&logoColor=white)](https://github.com/dknauss/Borges/actions/workflows/runtime-matrix.yml)
 [![CI](https://github.com/dknauss/Borges/actions/workflows/ci.yml/badge.svg)](https://github.com/dknauss/Borges/actions/workflows/ci.yml)
