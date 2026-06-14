@@ -25,10 +25,15 @@ specifications that supplement the authoritative `SPEC.md` at the repo root.
 
 ## Current plans
 
-| Document                                                                                 | Status                                                                                                     | Owner |
-| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----- |
-| [performance-stability-remediation-plan.md](./performance-stability-remediation-plan.md) | Drafted 2026-05-08; revised through Phase 2 stabilization; implementation stabilized pending review/commit | TBD   |
-| [sort-conformance-plan.md](./sort-conformance-plan.md)                                   | Drafted 2026-05-07; revised 2026-05-07 with Codex review feedback; ready for sprint planning               | TBD   |
+| Document                                               | Status                                                                                                      | Owner |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----- |
+| [sort-conformance-plan.md](./sort-conformance-plan.md) | Drafted 2026-05-07; partially implemented through the 1.3.x line; remaining suffix/locale backlog stays open | TBD   |
+
+## Archived plans
+
+| Document                                                                                         | Archived because                                                                 |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| [performance-stability-remediation-plan.md](./archive/performance-stability-remediation-plan.md) | Implemented through the 1.3.x release line; keep as historical remediation record |
 
 ## Conventions
 

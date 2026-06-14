@@ -7,11 +7,13 @@ The roadmap uses two distinct phase numbering schemes:
 -   **Pre-launch product phases (1-7)** — historical product roadmap that
     delivered the `1.0.0` WordPress.org release on 2026-05-04. All complete.
 -   **Post-launch GSD phases (`01-`, `02-`, ...)** — milestone-relative phase
-    plans tracked under `.planning/phases/`. These are the executable units
+    plans tracked under `.planning/phases/` while active and
+    `.planning/archive/phases/` after completion. These are the executable units
     used by `/gsd:plan-phase` and `/gsd:execute-phase`.
 
-When a doc says "Phase 2" without qualifier, it refers to the current
-post-launch GSD phase (`02-performance-stability-remediation`).
+When a historical doc says "Phase 2" without qualifier, it refers to the
+post-launch GSD phase `02-performance-stability-remediation`, now archived
+after completion.
 
 ### Pre-launch product phases (complete)
 
@@ -28,6 +30,12 @@ post-launch GSD phase (`02-performance-stability-remediation`).
 -   **Phase 01** — post-launch cleanup and documentation polish (complete)
 -   **Phase 02** — performance and stability remediation (complete, committed
     in `3d5d3de` and `539b6b3`)
+-   **Phase 03** — 1.3.x release prep (complete; `v1.3.3` is the current
+    public release baseline)
+-   **Phase 04** — frontend Cite/Export affordances (active next feature
+    track)
+-   **Phase 05** — writable bibliography REST/Abilities design (memo complete;
+    implementation deferred)
 
 ## Phase detail
 
@@ -239,10 +247,10 @@ Investigation outcome on 2026-04-05:
 
 ### Performance/stability remediation update — 2026-05-11
 
-Current planning is grounded in
-`docs/planning/performance-stability-remediation-plan.md`
+Historical planning is archived in
+`docs/planning/archive/performance-stability-remediation-plan.md`
 and executed through
-`.planning/phases/02-performance-stability-remediation/02-PLAN.md`.
+`.planning/archive/phases/02-performance-stability-remediation/02-PLAN.md`.
 
 Implementation status: committed (`3d5d3de` "stabilize bibliography formatter
 workflows", `539b6b3` "address stabilization review notes") and shipped in the
@@ -376,17 +384,23 @@ Remaining non-blocking maintainability items:
 
 ### Translation and language-pack backlog
 
-Current status as of 2026-05-04:
+Current status as of 2026-06-14:
 
 -   English (US) is the plugin source language and is not counted by
     WordPress.org as a translated locale.
--   WordPress.org currently publishes one official generated language pack for
-    the plugin: `ru_RU`.
+-   The live WordPress.org plugin page is the canonical public source for
+    official generated language packs. At the 2026-06-14 audit it reported one
+    translated locale and showed English (US) plus Russian in the Languages
+    list.
 -   The repository/package includes seed PO/MO files for translator review and
     import in `fr_FR`, `de_DE`, `nl_NL`, `sv_SE`, `es_ES`, `it_IT`, `pt_PT`,
     `pl_PL`, `ru_RU`, `ja`, `zh_CN`, `ko_KR`, `sr_RS`, `hr`, `pt_BR`, `hi_IN`,
     `bn_BD`, `ta_IN`, and `te`. These are not the same as official WordPress.org
     language-pack availability.
+-   The 2026-06-14 i18n refresh regenerated the POT from current PHP, JS, and
+    block metadata, then merged all 19 seed PO files and rebuilt all 19 MO files.
+    The current POT has 93 non-empty source strings. Seed translations remain
+    partial/import material with fuzzy or untranslated entries pending review.
 -   Official language packs are generated from translate.wordpress.org only
     after the Stable plugin translations are approved/current for a locale. The
     first pack for a plugin/theme locale requires the Stable sub-project to
@@ -394,10 +408,11 @@ Current status as of 2026-05-04:
 
 Planned language-pack work:
 
-1. **Regenerate i18n artifacts from current source** — update the POT from PHP,
-   JS, and block metadata; regenerate local MO files; generate/verify JS JSON
-   translation files if bundled translations remain in the package.
-2. **Decide bundled-vs-official translation policy** — prefer WordPress.org
+1. **Keep i18n artifacts current with source strings** — regenerate the POT and
+   merge/rebuild seed PO/MO files whenever PHP, JS, or block metadata strings
+   change; generate/verify JS JSON translation files only if bundled
+   translations are intentionally shipped for a locale.
+2. **Maintain bundled-vs-official translation policy** — prefer WordPress.org
    language packs as the public availability signal; keep bundled PO/MO files
    only as seed/import material unless there is a strong support reason to ship
    reviewed local translations.
@@ -630,7 +645,8 @@ Completed:
 
 Plans:
 
--   [x] 01-PLAN.md — post-launch cleanup and documentation polish
+-   [x] `.planning/archive/phases/01-post-launch-cleanup-and-documentation-polish/01-PLAN.md`
+    — post-launch cleanup and documentation polish
 
 ### Phase 2: Performance and stability remediation
 
@@ -646,8 +662,8 @@ Plans:
 
 Plans:
 
--   [x] 02-PLAN.md — performance and stability remediation (committed in
-    `3d5d3de`, `539b6b3`)
+-   [x] `.planning/archive/phases/02-performance-stability-remediation/02-PLAN.md`
+    — performance and stability remediation (committed in `3d5d3de`, `539b6b3`)
 
 ### Phase 3: 1.3.x release prep
 
@@ -664,7 +680,8 @@ Plans:
 
 Plans:
 
--   [x] 03-01-PLAN.md — 1.3.x release prep; current public baseline is `v1.3.3`
+-   [x] `.planning/archive/phases/03-1-3-0-release-prep/03-01-PLAN.md` —
+    1.3.x release prep; current public baseline is `v1.3.3`
 
 ### Phase 4: Frontend Cite/Export affordances
 

@@ -7,28 +7,29 @@ After modifying PHP or JS strings, regenerate the template with WP-CLI:
 ```bash
 wp i18n make-pot . languages/borges-bibliography-builder.pot \
   --domain=borges-bibliography-builder \
-  --exclude=node_modules,vendor,packages \
-  --headers='{"Project-Id-Version":"Borges Bibliography Builder","Report-Msgid-Bugs-To":"https://github.com/dknauss/borges-bibliography-builder/issues"}'
+  --exclude=node_modules,vendor,packages,output,build,.git,.tmp
 ```
 
 The POT is checked into `languages/`. Commit it alongside any source string changes so translators and translate.wordpress.org stay in sync.
 
-## MO compilation
+## Seed PO/MO refresh
 
-After editing a PO file, compile the binary MO:
-
-```bash
-msgfmt languages/borges-bibliography-builder-fr_FR.po \
-       -o languages/borges-bibliography-builder-fr_FR.mo
-```
-
-Or compile all at once:
+After regenerating the POT, merge the current source-string catalog into the
+seed PO files:
 
 ```bash
-for f in languages/*.po; do
-  msgfmt "$f" -o "${f%.po}.mo"
-done
+wp i18n update-po languages/borges-bibliography-builder.pot languages
 ```
+
+Then rebuild the binary MO files:
+
+```bash
+wp i18n make-mo languages languages
+```
+
+GNU gettext `msgfmt` is also acceptable for local validation/compilation when
+available, but WP-CLI is the project-standard path because it is already needed
+for POT and JS JSON generation.
 
 ## JS JSON artifacts
 
@@ -43,6 +44,24 @@ wp i18n make-json languages/borges-bibliography-builder-fr_FR.po \
 This produces one or more files like `languages/borges-bibliography-builder-fr_FR-<hash>.json` that WordPress discovers automatically via `wp_set_script_translations()`. The block registers its script handle in `build/index.js`; the `textdomain` field in `block.json` is `borges-bibliography-builder`.
 
 No JS JSON files are currently bundled because the plugin relies on WordPress.org language packs for JS strings in deployed locales. If bundled translations are added back for a locale, run `make-json` and commit the resulting files.
+
+## Current coverage snapshot
+
+Reviewed 2026-06-14:
+
+-   The checked-in POT contains 93 non-empty source strings for
+    `borges-bibliography-builder`.
+-   The `languages/` directory contains 19 seed PO/MO locale pairs:
+    `bn_BD`, `de_DE`, `es_ES`, `fr_FR`, `hi_IN`, `hr`, `it_IT`, `ja`,
+    `ko_KR`, `nl_NL`, `pl_PL`, `pt_BR`, `pt_PT`, `ru_RU`, `sr_RS`, `sv_SE`,
+    `ta_IN`, `te`, and `zh_CN`.
+-   Each seed PO currently tracks the 93-string catalog, but the seed files are
+    not fully reviewed translations. Many newly merged entries are intentionally
+    untranslated or fuzzy pending human review.
+-   The live WordPress.org plugin page currently reports one translated locale;
+    its language list shows English (US) plus Russian. Treat that live page as
+    the public source of truth because generated language-pack availability can
+    change independently of this repository.
 
 ## Bundled seed files vs official language packs
 

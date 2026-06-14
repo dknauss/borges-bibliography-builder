@@ -5,7 +5,7 @@
 Completed/superseded by later performance planning. The 2026-04-04 quick task
 delivered the initial benchmark harness, caller-owned formatting direction, and
 LRU formatter cache work. The current execution plan is now
-`/Users/danknauss/Developer/GitHub/wp-bibliography-block/.planning/phases/02-performance-stability-remediation/02-PLAN.md`,
+`.planning/archive/phases/02-performance-stability-remediation/02-PLAN.md`,
 with the hidden 51-entry cliff as the first P0 item.
 
 ## Goal

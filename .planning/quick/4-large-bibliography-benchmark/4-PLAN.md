@@ -5,7 +5,8 @@
 Produce authoritative cold/warm latency measurements for the PHP formatter and
 JS editor at bibliography sizes above the current 50-citation cap (75, 100,
 150, 200 entries) across all supported style families, so the team can choose
-between the three open policy options from `docs/planning/performance-stability-remediation-plan.md` REQ-C1:
+between the three open policy options from
+`docs/planning/archive/performance-stability-remediation-plan.md` REQ-C1:
 1. Raise the hard cap with benchmark evidence
 2. Soft cap with explicit warnings at a tested threshold
 3. Keep 50 as the clean-UX target and add batched/streaming formatting for

@@ -1,6 +1,6 @@
 # Project State
 
-_Last reviewed: 2026-06-13._
+_Last reviewed: 2026-06-14._
 
 ## Current Focus
 
@@ -8,7 +8,7 @@ _Last reviewed: 2026-06-13._
    browser-based WordPress Playground by using CrossRef's CSL transform endpoint
    directly, serialized DOI requests, and added a PubMed sample to the demo
    starter content.
-2. `main` is currently nine commits ahead of `v1.3.3` with post-release
+2. `main` is currently 11 commits ahead of `v1.3.3` with post-release
    test, documentation, planning, hygiene, and dev-dependency work:
    - `4fee7d2` Add Playground DOI import smoke test
    - `1654cee` Ignore local Claude worktrees
@@ -19,6 +19,8 @@ _Last reviewed: 2026-06-13._
    - `fbe09da` chore(deps-dev): bump shell-quote
    - `4519dd4` Refresh planning state after dependency update
    - `8002bed` chore(deps-dev): bump webpack-dev-server
+   - `adb8998` Document dependency alert resolution
+   - `b44a899` Add direct access guard to PMID helpers
 3. Keep the release artifact, WordPress.org SVN output, Playground blueprints,
    and docs aligned whenever DOI/PMID/BibTeX import behavior changes.
 4. Next feature track remains frontend Cite/Export affordances, unless a
@@ -45,7 +47,8 @@ _Last reviewed: 2026-06-13._
    - The live WordPress.org plugin page is the canonical source for official
      generated language packs.
    - Bundled PO/MO files are seed/import material for translator review, not
-     public language-pack availability claims.
+     public language-pack availability claims. The 2026-06-14 i18n refresh
+     brought all 19 seed PO/MO locale pairs up to the current 93-string POT.
 
 ## Last Activity
 
@@ -60,6 +63,11 @@ _Last reviewed: 2026-06-13._
 - `webpack-dev-server` was bumped beyond the patched 5.2.4 threshold; the
   remaining `uuid` and `showdown` alerts were dismissed in GitHub as tolerable
   transitive development-dependency risk with comments.
+- The POT, 19 seed PO files, and 19 seed MO files were refreshed from current
+  source strings; active docs now point to the live WordPress.org Languages
+  list for official language-pack availability.
+- Historical Phase 1-3 planning docs and the implemented performance
+  remediation plan were archived out of the active planning paths.
 
 ## Active Concerns
 

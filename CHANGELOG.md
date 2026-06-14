@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Review and update repository docs for the current DOI resolver path, PubMed/PMID support, Playground blueprint install behavior, runtime matrix coverage, and 1.3.3 planning state.
 - Bump development dependency lockfile coverage for `shell-quote` and `webpack-dev-server`; document/dismiss remaining transitive development-only Dependabot alerts where no safe compatible patch is currently available.
+- Refresh the POT plus 19 seed PO/MO locale pairs from current source strings, clarify translation coverage docs, and archive historical planning docs out of active planning paths.
 
 ## [1.3.3] - 2026-05-11
 

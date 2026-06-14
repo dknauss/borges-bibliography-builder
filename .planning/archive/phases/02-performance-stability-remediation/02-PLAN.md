@@ -5,7 +5,7 @@
 Eliminate the current hidden bibliography-size cliff and harden the
 editor/formatter path before starting broader feature work. This phase
 operationalizes
-`/Users/danknauss/Developer/GitHub/wp-bibliography-block/docs/planning/performance-stability-remediation-plan.md`
+`docs/planning/archive/performance-stability-remediation-plan.md`
 into an executable GSD plan.
 
 ## Current-state baseline checked 2026-05-09
@@ -13,7 +13,7 @@ into an executable GSD plan.
 Recent commits reviewed before planning:
 
 -   `809b9d5` — revised
-    `/Users/danknauss/Developer/GitHub/wp-bibliography-block/docs/planning/performance-stability-remediation-plan.md`
+    `docs/planning/archive/performance-stability-remediation-plan.md`
     with the deeper review findings.
 -   `b0527ed` — added the initial performance/stability remediation plan.
 -   `a99b7e3`, `6c05c63`, `77f77a9` — implemented and hardened PMID resolution

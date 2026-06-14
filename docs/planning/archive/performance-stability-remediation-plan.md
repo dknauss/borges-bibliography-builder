@@ -11,7 +11,7 @@ It is structured as a sequence of self-contained requirements grouped into four 
 - **State:** Implemented through the 1.3.x release line. Keep this document as the historical remediation plan and revisit budgets before new performance work.
 - **Owner:** TBD
 - **Stakeholders:** Plugin maintainers, performance reviewer, release engineering
-- **Canonical path:** `docs/planning/performance-stability-remediation-plan.md`
+- **Canonical path:** `docs/planning/archive/performance-stability-remediation-plan.md`
 
 ---
 

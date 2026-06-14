@@ -16,7 +16,7 @@ block backed by CSL-JSON.
 
 ## Current focus
 
--   Current public release baseline is `v1.3.3`; `main` is nine commits ahead
+-   Current public release baseline is `v1.3.3`; `main` is 11 commits ahead
     with post-release E2E, docs, planning, sorting-test, hygiene, and
     dev-dependency lockfile work
 -   Next feature track is the post-Phase 2 backlog, starting with frontend

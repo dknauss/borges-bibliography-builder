@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Borges Bibliography Builder
  * Plugin URI:        https://github.com/dknauss/borges-bibliography-builder/
- * Description:       Paste a DOI or BibTeX entry to build a formatted, auto-sorted bibliography in any style.
+ * Description:       Paste DOI, PubMed/PMID, BibTeX, or citation text into a formatted, auto-sorted bibliography.
  * Version:           1.3.3
  * Requires at least: 6.4
  * Tested up to:      7.0
