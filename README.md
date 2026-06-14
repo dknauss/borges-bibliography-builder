@@ -1,5 +1,7 @@
 # Borges Bibliography Builder for WordPress
 
+![](.wordpress-org/banner-1544x500.png)
+
 [![License: GPL v2+](https://img.shields.io/badge/License-GPLv2%2B-blue.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 [![WordPress tested](https://img.shields.io/badge/WordPress-6.4%E2%80%937.0-21759b.svg?logo=wordpress&logoColor=white)](https://github.com/dknauss/borges-bibliography-builder/actions/workflows/runtime-matrix.yml)
 [![PHP tested](https://img.shields.io/badge/PHP-7.4%E2%80%938.4-777bb4.svg?logo=php&logoColor=white)](https://github.com/dknauss/borges-bibliography-builder/actions/workflows/runtime-matrix.yml)
@@ -21,8 +23,6 @@ Just write out your citations or paste DOIs, PubMed/PMID identifiers, and BibTeX
 ## Try it in WordPress Playground
 
 Install the public release from [WordPress.org](https://wordpress.org/plugins/borges-bibliography-builder/) or launch a disposable WordPress instance with the plugin preinstalled: [Try the Borges Bibliography Builder in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/dknauss/borges-bibliography-builder/main/playground/blueprint.json). The GitHub-hosted demo Blueprint installs the latest GitHub Release ZIP through the WordPress Playground CORS proxy and explicitly requests PHP `intl` support because editor-time CSL formatting runs through the plugin's local PHP formatter. The WordPress.org Preview blueprint is separate; WordPress.org installs Borges automatically there, and the blueprint only seeds demo content and auxiliary plugin setup.
-
-![](.wordpress-org/banner-1544x500.png)
 
 ## Screenshots
 
