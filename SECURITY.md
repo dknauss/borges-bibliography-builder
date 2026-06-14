@@ -14,7 +14,7 @@ This plugin accepts untrusted input (pasted text, CrossRef API responses) and re
 
 To report a vulnerability:
 
-1. Use [GitHub Private Vulnerability Reporting](https://github.com/dknauss/borges-bibliography-builder/security/advisories/new) to submit a report.
+1. Use [GitHub Private Vulnerability Reporting](https://github.com/dknauss/Borges/security/advisories/new) to submit a report.
 2. Include:
    - A description of the vulnerability.
    - Steps to reproduce or a proof of concept.

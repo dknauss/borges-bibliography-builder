@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Borges Bibliography Builder 1.3.4\n"
-"Report-Msgid-Bugs-To: https://github.com/dknauss/borges-bibliography-builder/issues\n"
+"Report-Msgid-Bugs-To: https://github.com/dknauss/Borges/issues\n"
 "Last-Translator: Borges Bibliography Builder contributors\n"
 "Language-Team: Tamil\n"
 "MIME-Version: 1.0\n"
@@ -392,7 +392,7 @@ msgstr ""
 
 #. Plugin URI of the plugin
 #: bibliography-builder.php
-msgid "https://github.com/dknauss/borges-bibliography-builder/"
+msgid "https://github.com/dknauss/Borges/"
 msgstr ""
 
 #. Author of the plugin

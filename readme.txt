@@ -25,7 +25,7 @@ The **Borges Bibliography Builder** transforms pasted DOI(s), PubMed/PMID record
 
 **Reference-manager friendly.** Export and reuse your bibliography in common research workflows. Borges supports CSL-JSON, BibTeX, BibLaTeX, RIS, DOI links, JSON-LD, and optional COinS metadata for compatibility with tools such as Zotero, Mendeley, EndNote, JabRef, BibDesk, and other citation managers.
 
-**Try it first.** Launch a disposable demo in [WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/dknauss/borges-bibliography-builder/main/playground/blueprint.json) before installing it on your site.
+**Try it first.** Launch a disposable demo in [WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/dknauss/Borges/main/playground/blueprint.json) before installing it on your site.
 
 **Translation-ready.** Plugin interface strings use the `borges-bibliography-builder` text domain, and official WordPress.org language packs are generated as community translations are approved on translate.wordpress.org.
 
@@ -96,7 +96,7 @@ PHP 7.4+ and WordPress 6.4+. Borges Bibliography Builder is tested up to WordPre
 
 Full developer documentation, source code, issue tracker, and contribution guidelines are on GitHub:
 
-[https://github.com/dknauss/borges-bibliography-builder](https://github.com/dknauss/borges-bibliography-builder)
+[https://github.com/dknauss/Borges](https://github.com/dknauss/Borges)
 
 Bug reports, feature requests, and pull requests are welcome. See CONTRIBUTING.md in the repository for development setup, coding standards, and the PR process.
 

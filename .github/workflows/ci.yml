@@ -180,7 +180,7 @@ jobs:
               uses: codecov/codecov-action@v5
               with:
                   files: ./coverage/clover.xml,./build/logs/phpunit-clover.xml
-                  slug: dknauss/borges-bibliography-builder
+                  slug: dknauss/Borges
                   use_oidc: true
                   fail_ci_if_error: false
 

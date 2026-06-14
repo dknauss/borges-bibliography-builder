@@ -41,7 +41,7 @@ describe('Playground blueprints', () => {
 			expect.objectContaining({
 				pluginData: {
 					resource: 'url',
-					url: 'https://wordpress-playground-cors-proxy.net/?https://github.com/dknauss/borges-bibliography-builder/releases/latest/download/borges-bibliography-builder.zip',
+					url: 'https://wordpress-playground-cors-proxy.net/?https://github.com/dknauss/Borges/releases/latest/download/borges-bibliography-builder.zip',
 				},
 			})
 		);

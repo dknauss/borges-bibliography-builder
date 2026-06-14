@@ -340,8 +340,8 @@ Submitted 2026-04-11. Approved and deployed 2026-05-04.
 Current operational note (2026-05-04):
 
 -   `main` CI was restored to green after the branding/changelog cleanup.
--   Repository and release naming are normalized around
-    `dknauss/borges-bibliography-builder` and `borges-bibliography-builder.zip`.
+-   GitHub repository branding is `dknauss/Borges`; WordPress.org release
+    packaging remains normalized around `borges-bibliography-builder.zip`.
 -   The first public WordPress.org release does not need a transition zip.
 -   Post-launch cleanup should keep GitHub README, WordPress.org `readme.txt`,
     SPEC, release assets, and SVN output aligned.
