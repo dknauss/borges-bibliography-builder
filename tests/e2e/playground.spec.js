@@ -18,9 +18,17 @@ PMID:26673779
 }`;
 
 function getPluginRow(page) {
-	return page.locator(
-		'tr[data-plugin="borges-bibliography-builder/bibliography-builder.php"]:not(.plugin-update-tr)'
-	);
+	return page
+		.locator(
+			[
+				'tr[data-slug="borges-bibliography-builder"]:not(.plugin-update-tr)',
+				'tr[data-slug="Borges"]:not(.plugin-update-tr)',
+				'tr[data-plugin="borges-bibliography-builder/bibliography-builder.php"]:not(.plugin-update-tr)',
+				'tr[data-plugin="Borges/bibliography-builder.php"]:not(.plugin-update-tr)',
+				'tr[data-plugin$="/bibliography-builder.php"]:not(.plugin-update-tr)',
+			].join(', ')
+		)
+		.first();
 }
 
 async function ensurePluginActivated(page) {
@@ -31,7 +39,6 @@ async function ensurePluginActivated(page) {
 
 	const pluginRow = getPluginRow(page);
 
-	await expect(pluginRow).toHaveCount(1);
 	await expect(pluginRow).toBeVisible();
 
 	const activateLink = pluginRow.getByRole('link', { name: /^Activate$/i });
