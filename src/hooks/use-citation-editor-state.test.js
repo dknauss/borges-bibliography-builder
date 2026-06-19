@@ -105,6 +105,7 @@ function makeHookArgs(citations = [makeCitation()]) {
 		queueFocus,
 		setAttributes,
 		citationStyle: 'chicago-notes-bibliography',
+		outputCiteExport: true,
 	};
 }
 

@@ -101,6 +101,11 @@ function formatRisAuthor(author) {
 	return author.family || author.given || '';
 }
 
+// Note: this intentionally restricts to ASCII word characters, so non-Latin
+// scripts (e.g. CJK) and some letters (e.g. "ø") that NFKD does not decompose
+// are dropped. Such citations fall through to the title slug, then to the
+// generic "citation" basename. This keeps download filenames filesystem-safe
+// across platforms at the cost of less specific names for those entries.
 function slugifyExportName(value) {
 	return String(value || '')
 		.normalize('NFKD')

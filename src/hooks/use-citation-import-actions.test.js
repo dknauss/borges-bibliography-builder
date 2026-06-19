@@ -60,6 +60,7 @@ function makeArgs(overrides = {}) {
 		clearNotice: jest.fn(),
 		inputValue: '10.1234/example',
 		isCurrentAsyncOperation: jest.fn(() => true),
+		outputCiteExport: true,
 		queueFocus: jest.fn(),
 		setAttributes: jest.fn(),
 		setIsLoading: jest.fn(),

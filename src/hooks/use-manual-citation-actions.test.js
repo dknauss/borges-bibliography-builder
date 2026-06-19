@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { useManualCitationActions } from './use-manual-citation-actions';
+import { computeExportStrings } from './compute-export-strings';
 import { findDuplicateCitation } from '../lib/deduplicate';
 import { validateManualEntry } from '../lib/manual-entry';
 
@@ -68,6 +69,7 @@ function makeArgs(overrides = {}) {
 		clearNotice: jest.fn(),
 		currentNotice: null,
 		isCurrentAsyncOperation: jest.fn(() => true),
+		outputCiteExport: true,
 		pasteZoneRef: { current: null },
 		queueFocus: jest.fn(),
 		setAttributes: jest.fn(),
@@ -92,6 +94,19 @@ describe('useManualCitationActions — export-string pre-computation', () => {
 		const saved = args.setAttributes.mock.calls[0][0].citations[0];
 		expect(saved.exportBibtex).toBe('BIBTEX');
 		expect(saved.exportBiblatex).toBe('BIBLATEX');
+		expect(saved.formattedText).toBe('Formatted entry');
+	});
+
+	it('does not pre-compute export strings when the feature is disabled', async () => {
+		const args = makeArgs({ outputCiteExport: false });
+		const { result } = renderHook(() => useManualCitationActions(args));
+
+		await act(() => result.current.handleManualAdd());
+
+		expect(computeExportStrings).not.toHaveBeenCalled();
+		const saved = args.setAttributes.mock.calls[0][0].citations[0];
+		expect(saved.exportBibtex).toBeUndefined();
+		expect(saved.exportBiblatex).toBeUndefined();
 		expect(saved.formattedText).toBe('Formatted entry');
 	});
 });

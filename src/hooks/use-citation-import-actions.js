@@ -4,6 +4,7 @@ import { partitionDuplicateCitations } from '../lib/deduplicate';
 import { SUPPORTED_INPUT_MESSAGE } from '../lib/input-support';
 import { sortCitations } from '../lib/sorter';
 import { computeExportStrings } from './compute-export-strings';
+import { createCitationId } from '../lib/citation-id';
 import {
 	MAX_CITATIONS_PER_BIBLIOGRAPHY,
 	getBibliographyLimitExceededMessage,
@@ -98,6 +99,7 @@ function shouldWarnParseResult({
  * @param {Function} options.clearNotice             Notice clearer.
  * @param {string}   options.inputValue              Current paste/import text.
  * @param {Function} options.isCurrentAsyncOperation Latest-operation checker.
+ * @param {boolean}  options.outputCiteExport        Whether Cite/Export is on.
  * @param {Function} options.queueFocus              Focus queue helper.
  * @param {Function} options.setAttributes           Block attribute setter.
  * @param {Function} options.setIsLoading            Loading state setter.
@@ -112,6 +114,7 @@ export function useCitationImportActions({
 	clearNotice,
 	inputValue,
 	isCurrentAsyncOperation,
+	outputCiteExport = false,
 	queueFocus,
 	setAttributes,
 	setIsLoading,
@@ -190,22 +193,34 @@ export function useCitationImportActions({
 					return;
 				}
 
-				const exportStrings = await computeExportStrings(
-					mergedEntries.map((entry) => entry.csl),
-					citationStyle
-				);
-				if (!isCurrentAsyncOperation(operationId)) {
-					return;
+				// Pre-compute async BibTeX/BibLaTeX strings only when the
+				// Cite/Export feature is enabled (RIS/CSL-JSON build in save()).
+				let exportStrings = null;
+				if (outputCiteExport) {
+					exportStrings = await computeExportStrings(
+						mergedEntries.map((entry) => entry.csl),
+						citationStyle
+					);
+					if (!isCurrentAsyncOperation(operationId)) {
+						return;
+					}
 				}
 
 				const formattedMergedEntries = mergedEntries.map(
 					(entry, index) => ({
 						...entry,
-						id: entry.id || crypto.randomUUID(),
+						id: entry.id || createCitationId(),
 						formattedText: formattedTexts[index],
-						exportBibtex: exportStrings[index]?.exportBibtex ?? '',
-						exportBiblatex:
-							exportStrings[index]?.exportBiblatex ?? '',
+						...(exportStrings
+							? {
+									exportBibtex:
+										exportStrings[index]?.exportBibtex ??
+										'',
+									exportBiblatex:
+										exportStrings[index]?.exportBiblatex ??
+										'',
+							  }
+							: {}),
 					})
 				);
 				if (!isCurrentAsyncOperation(operationId)) {
@@ -294,6 +309,7 @@ export function useCitationImportActions({
 		clearNotice,
 		inputValue,
 		isCurrentAsyncOperation,
+		outputCiteExport,
 		queueFocus,
 		setAttributes,
 		setIsLoading,

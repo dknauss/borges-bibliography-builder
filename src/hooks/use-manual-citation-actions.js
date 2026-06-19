@@ -10,6 +10,7 @@ import {
 } from '../lib/manual-entry';
 import { sortCitations } from '../lib/sorter';
 import { computeExportStrings } from './compute-export-strings';
+import { createCitationId } from '../lib/citation-id';
 import {
 	MAX_CITATIONS_PER_BIBLIOGRAPHY,
 	getBibliographyLimitReachedMessage,
@@ -35,6 +36,7 @@ const FORMATTER_FALLBACK_MESSAGE = __(
  * @param {Function} options.clearNotice             Notice clearer.
  * @param {Object}   options.currentNotice           Current block notice.
  * @param {Function} options.isCurrentAsyncOperation Latest-operation checker.
+ * @param {boolean}  options.outputCiteExport        Whether Cite/Export is on.
  * @param {Object}   options.pasteZoneRef            First field/focus ref.
  * @param {Function} options.queueFocus              Focus queue helper.
  * @param {Function} options.setAttributes           Block attribute setter.
@@ -48,6 +50,7 @@ export function useManualCitationActions({
 	clearNotice,
 	currentNotice,
 	isCurrentAsyncOperation,
+	outputCiteExport = false,
 	pasteZoneRef,
 	queueFocus,
 	setAttributes,
@@ -170,21 +173,32 @@ export function useManualCitationActions({
 				return;
 			}
 
-			const exportStrings = await computeExportStrings(
-				mergedEntries.map((citation) => citation.csl),
-				citationStyle
-			);
-			if (!isCurrentAsyncOperation(operationId)) {
-				return;
+			// Pre-compute async BibTeX/BibLaTeX strings only when the
+			// Cite/Export feature is enabled (RIS/CSL-JSON build in save()).
+			let exportStrings = null;
+			if (outputCiteExport) {
+				exportStrings = await computeExportStrings(
+					mergedEntries.map((citation) => citation.csl),
+					citationStyle
+				);
+				if (!isCurrentAsyncOperation(operationId)) {
+					return;
+				}
 			}
 
 			const updated = sortCitations(
 				mergedEntries.map((citation, index) => ({
 					...citation,
-					id: citation.id || crypto.randomUUID(),
+					id: citation.id || createCitationId(),
 					formattedText: formattedTexts[index] || '',
-					exportBibtex: exportStrings[index]?.exportBibtex ?? '',
-					exportBiblatex: exportStrings[index]?.exportBiblatex ?? '',
+					...(exportStrings
+						? {
+								exportBibtex:
+									exportStrings[index]?.exportBibtex ?? '',
+								exportBiblatex:
+									exportStrings[index]?.exportBiblatex ?? '',
+						  }
+						: {}),
 				})),
 				citationStyle
 			);
@@ -218,6 +232,7 @@ export function useManualCitationActions({
 		citationsRef,
 		isCurrentAsyncOperation,
 		manualFields,
+		outputCiteExport,
 		queueFocus,
 		setAttributes,
 	]);

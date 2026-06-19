@@ -16,6 +16,7 @@ import {
 	getBibliographyOverLimitMessage,
 } from '../lib/citation-limits';
 import { computeExportStrings } from './compute-export-strings';
+import { createCitationId } from '../lib/citation-id';
 
 const FORMATTER_FALLBACK_MESSAGE =
 	'Formatter unavailable; using fallback citation text.';
@@ -91,6 +92,7 @@ export function useCitationEditorState({
 	clearNotice,
 	headingText,
 	isCurrentAsyncOperation = () => true,
+	outputCiteExport = false,
 	queueFocus,
 	setAttributes,
 }) {
@@ -388,27 +390,39 @@ export function useCitationEditorState({
 			return;
 		}
 
-		const exportStrings = await computeExportStrings(
-			nextEntries.map((entry) => entry.csl),
-			citationStyle
-		);
+		// Only pre-compute the async BibTeX/BibLaTeX export strings when the
+		// Cite/Export feature is enabled (RIS/CSL-JSON are built in save()).
+		let exportStrings = null;
+		if (outputCiteExport) {
+			exportStrings = await computeExportStrings(
+				nextEntries.map((entry) => entry.csl),
+				citationStyle
+			);
 
-		// Re-check guards after the export await — a cancel or a newer operation
-		// could have arrived while building the export strings.
-		if (
-			structuredEditingIdRef.current !== activeStructuredEditingId ||
-			!isCurrentAsyncOperation(operationId)
-		) {
-			return;
+			// Re-check guards after the export await — a cancel or a newer
+			// operation could have arrived while building the export strings.
+			if (
+				structuredEditingIdRef.current !== activeStructuredEditingId ||
+				!isCurrentAsyncOperation(operationId)
+			) {
+				return;
+			}
 		}
 
 		const updated = sortCitations(
 			nextEntries.map((entry, index) => ({
 				...entry,
-				id: entry.id || crypto.randomUUID(),
+				id: entry.id || createCitationId(),
 				formattedText: formattedTexts[index],
-				exportBibtex: exportStrings[index]?.exportBibtex ?? '',
-				exportBiblatex: exportStrings[index]?.exportBiblatex ?? '',
+				// A structured edit changes the CSL, so drop any stale export
+				// strings; they are recomputed above (when enabled) or backfilled
+				// by the editor effect when the feature is on.
+				exportBibtex: exportStrings
+					? exportStrings[index]?.exportBibtex ?? ''
+					: undefined,
+				exportBiblatex: exportStrings
+					? exportStrings[index]?.exportBiblatex ?? ''
+					: undefined,
 			})),
 			citationStyle
 		);
@@ -436,6 +450,7 @@ export function useCitationEditorState({
 		citationStyle,
 		citationsRef,
 		isCurrentAsyncOperation,
+		outputCiteExport,
 		queueFocus,
 		setAttributes,
 		structuredEditingId,
@@ -517,21 +532,34 @@ export function useCitationEditorState({
 				return;
 			}
 
-			const exportStrings = await computeExportStrings(
-				citationsRef.current.map((citation) => citation.csl),
-				nextStyle
-			);
-			if (!isCurrentAsyncOperation(operationId)) {
-				return;
+			// A style change does not alter the CSL, so existing export strings
+			// stay valid; only (re)compute when the feature is enabled.
+			let exportStrings = null;
+			if (outputCiteExport) {
+				exportStrings = await computeExportStrings(
+					citationsRef.current.map((citation) => citation.csl),
+					nextStyle
+				);
+				if (!isCurrentAsyncOperation(operationId)) {
+					return;
+				}
 			}
 
 			const updated = sortCitations(
 				citationsRef.current.map((citation, index) => ({
 					...citation,
-					id: citation.id || crypto.randomUUID(),
+					id: citation.id || createCitationId(),
 					formattedText: formattedTexts[index],
-					exportBibtex: exportStrings[index]?.exportBibtex ?? '',
-					exportBiblatex: exportStrings[index]?.exportBiblatex ?? '',
+					// Preserve existing strings when not recomputing (the spread
+					// keeps them); a style change never invalidates them.
+					...(exportStrings
+						? {
+								exportBibtex:
+									exportStrings[index]?.exportBibtex ?? '',
+								exportBiblatex:
+									exportStrings[index]?.exportBiblatex ?? '',
+						  }
+						: {}),
 				})),
 				nextStyle
 			);
@@ -565,6 +593,7 @@ export function useCitationEditorState({
 			clearNotice,
 			headingText,
 			isCurrentAsyncOperation,
+			outputCiteExport,
 			queueFocus,
 			resetEditingState,
 			setAttributes,

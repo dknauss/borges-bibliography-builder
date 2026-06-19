@@ -44,6 +44,8 @@ import {
 } from './lib/formatting';
 import { SUPPORTED_INPUT_MESSAGE } from './lib/input-support';
 import { sortCitations } from './lib/sorter';
+import { createCitationId } from './lib/citation-id';
+import { computeExportStrings } from './hooks/compute-export-strings';
 import {
 	MAX_CITATIONS_PER_BIBLIOGRAPHY,
 	SOFT_CAP_CITATIONS_PER_BIBLIOGRAPHY,
@@ -152,6 +154,7 @@ export default function Edit({ attributes, setAttributes }) {
 		clearNotice,
 		headingText,
 		isCurrentAsyncOperation,
+		outputCiteExport,
 		queueFocus,
 		setAttributes,
 	});
@@ -182,10 +185,48 @@ export default function Edit({ attributes, setAttributes }) {
 
 	useEffect(() => {
 		if (!attributes.bibliographyId) {
-			setAttributes({ bibliographyId: crypto.randomUUID() });
+			setAttributes({ bibliographyId: createCitationId() });
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+
+	// When Cite/Export is enabled, ensure existing citations have their async
+	// BibTeX/BibLaTeX export strings (RIS/CSL-JSON are computed in save()).
+	// Editing actions only pre-compute these while the feature is on, so this
+	// backfills citations that were added before it was toggled on.
+	useEffect(() => {
+		if (!outputCiteExport) {
+			return undefined;
+		}
+		const needsExportStrings = citations.some(
+			(citation) => citation.exportBibtex === undefined
+		);
+		if (!needsExportStrings) {
+			return undefined;
+		}
+
+		let cancelled = false;
+		(async () => {
+			const exportStrings = await computeExportStrings(
+				citations.map((citation) => citation.csl),
+				citationStyle
+			);
+			if (cancelled) {
+				return;
+			}
+			setAttributes({
+				citations: citations.map((citation, index) => ({
+					...citation,
+					exportBibtex: exportStrings[index]?.exportBibtex ?? '',
+					exportBiblatex: exportStrings[index]?.exportBiblatex ?? '',
+				})),
+			});
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [outputCiteExport, citations, citationStyle, setAttributes]);
 
 	useEffect(() => {
 		if (isNumericFamily) {
@@ -228,6 +269,7 @@ export default function Edit({ attributes, setAttributes }) {
 		clearNotice,
 		inputValue,
 		isCurrentAsyncOperation,
+		outputCiteExport,
 		queueFocus,
 		setAttributes,
 		setIsLoading,
@@ -248,6 +290,7 @@ export default function Edit({ attributes, setAttributes }) {
 		clearNotice,
 		currentNotice,
 		isCurrentAsyncOperation,
+		outputCiteExport,
 		pasteZoneRef,
 		queueFocus,
 		setAttributes,
