@@ -1,4 +1,5 @@
 import { useCallback } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
 
 function swapEntries(items, fromIndex, toIndex) {
 	const next = [...items];
@@ -8,7 +9,10 @@ function swapEntries(items, fromIndex, toIndex) {
 
 function getCitationLabel(citation) {
 	const author = citation?.csl?.author?.[0];
-	const name = author?.family || author?.literal || 'Unknown';
+	const name =
+		author?.family ||
+		author?.literal ||
+		__('Unknown', 'borges-bibliography-builder');
 	const year = citation?.csl?.issued?.['date-parts']?.[0]?.[0] || '';
 
 	return `${name} ${year}`.trim();
@@ -44,9 +48,16 @@ export function useCitationReorder({
 			setAttributes({ citations: updated });
 			announce(
 				'success',
-				`Moved '${label}' to position ${toIndex + 1} of ${
+				sprintf(
+					/* translators: 1: citation label, 2: new position, 3: total citations. */
+					__(
+						"Moved '%1$s' to position %2$d of %3$d.",
+						'borges-bibliography-builder'
+					),
+					label,
+					toIndex + 1,
 					updated.length
-				}.`,
+				),
 				{ type: 'snackbar' }
 			);
 			queueFocus({ type: 'entry', id });

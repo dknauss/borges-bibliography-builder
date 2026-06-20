@@ -2,7 +2,7 @@
  * Editor component for the Bibliography block.
  */
 
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	useBlockProps,
 	InspectorControls,
@@ -346,13 +346,22 @@ export default function Edit({ attributes, setAttributes }) {
 
 			citationsRef.current = updated;
 			setAttributes({ citations: updated });
-			let noticeMessage = 'Citation removed.';
+			let noticeMessage = __(
+				'Citation removed.',
+				'borges-bibliography-builder'
+			);
 			if (overLimitAfterDelete) {
-				noticeMessage = `Citation removed. ${getBibliographyOverLimitMessage(
-					updated.length
-				)}`;
+				noticeMessage = sprintf(
+					/* translators: %s: follow-up status message after removing a citation. */
+					__('Citation removed. %s', 'borges-bibliography-builder'),
+					getBibliographyOverLimitMessage(updated.length)
+				);
 			} else if (formatterFallback) {
-				noticeMessage = `Citation removed. ${FORMATTER_FALLBACK_MESSAGE}`;
+				noticeMessage = sprintf(
+					/* translators: %s: follow-up status message after removing a citation. */
+					__('Citation removed. %s', 'borges-bibliography-builder'),
+					FORMATTER_FALLBACK_MESSAGE
+				);
 			}
 
 			announce(

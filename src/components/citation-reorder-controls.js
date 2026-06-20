@@ -1,5 +1,5 @@
 import { Button } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { ChevronDownIcon, ChevronUpIcon } from '../lib/wp-icons';
 
 export function CitationReorderControls({
@@ -10,10 +10,18 @@ export function CitationReorderControls({
 	onMoveUp,
 }) {
 	const moveUpLabel = label
-		? `Move '${label}' up`
+		? sprintf(
+				/* translators: %s: citation label. */
+				__("Move '%s' up", 'borges-bibliography-builder'),
+				label
+		  )
 		: __('Move citation up', 'borges-bibliography-builder');
 	const moveDownLabel = label
-		? `Move '${label}' down`
+		? sprintf(
+				/* translators: %s: citation label. */
+				__("Move '%s' down", 'borges-bibliography-builder'),
+				label
+		  )
 		: __('Move citation down', 'borges-bibliography-builder');
 
 	return (

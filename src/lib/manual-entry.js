@@ -1,29 +1,30 @@
+import { __ } from '@wordpress/i18n';
 import { validateAndSanitizeCsl } from './csl-sanitize';
 import { createCitationId } from './citation-id';
 
 export const MANUAL_ENTRY_TYPE_OPTIONS = [
 	{
-		label: 'Book',
+		label: __('Book', 'borges-bibliography-builder'),
 		value: 'book',
 	},
 	{
-		label: 'Journal article',
+		label: __('Journal article', 'borges-bibliography-builder'),
 		value: 'article-journal',
 	},
 	{
-		label: 'Chapter',
+		label: __('Chapter', 'borges-bibliography-builder'),
 		value: 'chapter',
 	},
 	{
-		label: 'Edited collection',
+		label: __('Edited collection', 'borges-bibliography-builder'),
 		value: 'collection',
 	},
 	{
-		label: 'Thesis / dissertation',
+		label: __('Thesis / dissertation', 'borges-bibliography-builder'),
 		value: 'thesis',
 	},
 	{
-		label: 'Webpage',
+		label: __('Webpage', 'borges-bibliography-builder'),
 		value: 'webpage',
 	},
 ];
@@ -71,14 +72,20 @@ export function validateIdentifierFields(fields) {
 		normalizeFieldValue(fields.doi) &&
 		normalizeDoiValue(fields.doi) === null
 	) {
-		return 'Enter a valid DOI before adding.';
+		return __(
+			'Enter a valid DOI before adding.',
+			'borges-bibliography-builder'
+		);
 	}
 
 	if (
 		normalizeFieldValue(fields.url) &&
 		normalizeUrlValue(fields.url) === null
 	) {
-		return 'Enter a valid URL beginning with http:// or https:// before adding.';
+		return __(
+			'Enter a valid URL beginning with http:// or https:// before adding.',
+			'borges-bibliography-builder'
+		);
 	}
 
 	return null;
@@ -136,11 +143,17 @@ export function createEmptyManualEntryFields(preservedType = '') {
 
 export function validateManualEntry(fields) {
 	if (!normalizeFieldValue(fields.type)) {
-		return 'Choose a publication type before adding.';
+		return __(
+			'Choose a publication type before adding.',
+			'borges-bibliography-builder'
+		);
 	}
 
 	if (!normalizeFieldValue(fields.title)) {
-		return 'Enter a title before adding.';
+		return __(
+			'Enter a title before adding.',
+			'borges-bibliography-builder'
+		);
 	}
 
 	return validateIdentifierFields(fields);

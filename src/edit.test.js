@@ -27,6 +27,12 @@ jest.mock(
 	'@wordpress/i18n',
 	() => ({
 		__: (text) => text,
+		_n: (single, plural, count) => (count === 1 ? single : plural),
+		sprintf: (template, ...values) =>
+			template.replace(/%((\d+)\$)?[sd]/g, (match, _pos, index) => {
+				const valueIndex = index ? Number(index) - 1 : 0;
+				return String(values[valueIndex] ?? '');
+			}),
 	}),
 	{ virtual: true }
 );

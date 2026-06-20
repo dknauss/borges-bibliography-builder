@@ -1,4 +1,5 @@
 import { useCallback } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
 import { copyTextToClipboard } from '../lib/clipboard';
 import {
 	buildPlainTextBibliographyContent,
@@ -41,11 +42,21 @@ export function useBibliographyExportActions({
 					citationStyle
 				).trimEnd()
 			);
-			announce('success', 'Copied bibliography.', {
-				type: 'snackbar',
-			});
+			announce(
+				'success',
+				__('Copied bibliography.', 'borges-bibliography-builder'),
+				{
+					type: 'snackbar',
+				}
+			);
 		} catch (error) {
-			announce('error', 'Could not copy bibliography in this browser.');
+			announce(
+				'error',
+				__(
+					'Could not copy bibliography in this browser.',
+					'borges-bibliography-builder'
+				)
+			);
 			queueFocus({ type: 'notice' });
 		}
 	}, [announce, citationStyle, citationsRef, queueFocus]);
@@ -54,11 +65,21 @@ export function useBibliographyExportActions({
 		async (citation) => {
 			try {
 				await copyTextToClipboard(getDisplayText(citation));
-				announce('success', 'Copied citation.', {
-					type: 'snackbar',
-				});
+				announce(
+					'success',
+					__('Copied citation.', 'borges-bibliography-builder'),
+					{
+						type: 'snackbar',
+					}
+				);
 			} catch (error) {
-				announce('error', 'Could not copy citation in this browser.');
+				announce(
+					'error',
+					__(
+						'Could not copy citation in this browser.',
+						'borges-bibliography-builder'
+					)
+				);
 				queueFocus({ type: 'notice' });
 			}
 		},
@@ -72,13 +93,23 @@ export function useBibliographyExportActions({
 
 		try {
 			downloadCslJsonExport(citationsRef.current, citationStyle);
-			announce('success', 'Downloaded CSL-JSON export.', {
-				type: 'snackbar',
-			});
+			announce(
+				'success',
+				__(
+					'Downloaded CSL-JSON export.',
+					'borges-bibliography-builder'
+				),
+				{
+					type: 'snackbar',
+				}
+			);
 		} catch (error) {
 			announce(
 				'error',
-				'Could not download CSL-JSON export in this browser.'
+				__(
+					'Could not download CSL-JSON export in this browser.',
+					'borges-bibliography-builder'
+				)
 			);
 			queueFocus({ type: 'notice' });
 		}
@@ -91,13 +122,20 @@ export function useBibliographyExportActions({
 
 		try {
 			await downloadBibtexExport(citationsRef.current, citationStyle);
-			announce('success', 'Downloaded BibTeX export.', {
-				type: 'snackbar',
-			});
+			announce(
+				'success',
+				__('Downloaded BibTeX export.', 'borges-bibliography-builder'),
+				{
+					type: 'snackbar',
+				}
+			);
 		} catch (error) {
 			announce(
 				'error',
-				'Could not download BibTeX export in this browser.'
+				__(
+					'Could not download BibTeX export in this browser.',
+					'borges-bibliography-builder'
+				)
 			);
 			queueFocus({ type: 'notice' });
 		}
@@ -110,13 +148,23 @@ export function useBibliographyExportActions({
 
 		try {
 			await downloadBiblatexExport(citationsRef.current, citationStyle);
-			announce('success', 'Downloaded BibLaTeX export.', {
-				type: 'snackbar',
-			});
+			announce(
+				'success',
+				__(
+					'Downloaded BibLaTeX export.',
+					'borges-bibliography-builder'
+				),
+				{
+					type: 'snackbar',
+				}
+			);
 		} catch (error) {
 			announce(
 				'error',
-				'Could not download BibLaTeX export in this browser.'
+				__(
+					'Could not download BibLaTeX export in this browser.',
+					'borges-bibliography-builder'
+				)
 			);
 			queueFocus({ type: 'notice' });
 		}
@@ -129,11 +177,21 @@ export function useBibliographyExportActions({
 
 		try {
 			downloadRisExport(citationsRef.current, citationStyle);
-			announce('success', 'Downloaded RIS export.', {
-				type: 'snackbar',
-			});
+			announce(
+				'success',
+				__('Downloaded RIS export.', 'borges-bibliography-builder'),
+				{
+					type: 'snackbar',
+				}
+			);
 		} catch (error) {
-			announce('error', 'Could not download RIS export in this browser.');
+			announce(
+				'error',
+				__(
+					'Could not download RIS export in this browser.',
+					'borges-bibliography-builder'
+				)
+			);
 			queueFocus({ type: 'notice' });
 		}
 	}, [announce, citationStyle, citationsRef, queueFocus]);

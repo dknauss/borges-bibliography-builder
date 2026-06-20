@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from '@wordpress/element';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import {
 	getAutoFormattedText,
 	getDefaultHeadingText,
@@ -18,8 +19,10 @@ import {
 import { computeExportStrings } from './compute-export-strings';
 import { createCitationId } from '../lib/citation-id';
 
-const FORMATTER_FALLBACK_MESSAGE =
-	'Formatter unavailable; using fallback citation text.';
+const FORMATTER_FALLBACK_MESSAGE = __(
+	'Formatter unavailable; using fallback citation text.',
+	'borges-bibliography-builder'
+);
 
 function formatNameForField(name) {
 	if (!name) {
@@ -105,7 +108,10 @@ export function useCitationEditorState({
 
 	const getEntryLabel = useCallback((citation) => {
 		const author = citation.csl.author?.[0];
-		const name = author?.family || author?.literal || 'Unknown';
+		const name =
+			author?.family ||
+			author?.literal ||
+			__('Unknown', 'borges-bibliography-builder');
 		const year = citation.csl.issued?.['date-parts']?.[0]?.[0] || '';
 		return `${name} ${year}`.trim();
 	}, []);
@@ -128,7 +134,13 @@ export function useCitationEditorState({
 			isEscapingEditRef.current = false;
 			setEditingId(id);
 			setEditText(getDisplayText(entry));
-			announce('info', 'Editing citation. Press Escape to cancel.');
+			announce(
+				'info',
+				__(
+					'Editing citation. Press Escape to cancel.',
+					'borges-bibliography-builder'
+				)
+			);
 		},
 		[announce, citationsRef]
 	);
@@ -228,7 +240,13 @@ export function useCitationEditorState({
 				doi: entry.csl.DOI || '',
 				url: entry.csl.URL || '',
 			});
-			announce('info', 'Editing fields. Review and save to reformat.');
+			announce(
+				'info',
+				__(
+					'Editing fields. Review and save to reformat.',
+					'borges-bibliography-builder'
+				)
+			);
 		},
 		[announce, citationsRef]
 	);
@@ -432,8 +450,12 @@ export function useCitationEditorState({
 		announce(
 			formatterFallback ? 'warning' : 'success',
 			formatterFallback
-				? `Fields updated. ${FORMATTER_FALLBACK_MESSAGE}`
-				: 'Fields updated.',
+				? sprintf(
+						/* translators: %s: formatter fallback message. */
+						__('Fields updated. %s', 'borges-bibliography-builder'),
+						FORMATTER_FALLBACK_MESSAGE
+				  )
+				: __('Fields updated.', 'borges-bibliography-builder'),
 			formatterFallback ? {} : { type: 'snackbar' }
 		);
 		queueFocus(
@@ -470,9 +492,13 @@ export function useCitationEditorState({
 
 			citationsRef.current = updated;
 			setAttributes({ citations: updated });
-			announce('success', 'Auto-format restored.', {
-				type: 'snackbar',
-			});
+			announce(
+				'success',
+				__('Auto-format restored.', 'borges-bibliography-builder'),
+				{
+					type: 'snackbar',
+				}
+			);
 			queueFocus({ type: 'entry', id });
 		},
 		[announce, citationsRef, queueFocus, setAttributes]
@@ -503,9 +529,20 @@ export function useCitationEditorState({
 
 			if (!citationsRef.current.length) {
 				setAttributes({ citationStyle: nextStyle, ...headingUpdate });
-				announce('success', `Style changed to ${nextStyleLabel}.`, {
-					type: 'snackbar',
-				});
+				announce(
+					'success',
+					sprintf(
+						/* translators: %s: citation style label. */
+						__(
+							'Style changed to %s.',
+							'borges-bibliography-builder'
+						),
+						nextStyleLabel
+					),
+					{
+						type: 'snackbar',
+					}
+				);
 				return;
 			}
 
@@ -574,11 +611,38 @@ export function useCitationEditorState({
 			resetEditingState();
 			announce(
 				formatterFallback ? 'warning' : 'success',
-				`Style changed to ${nextStyleLabel}. Reformatted ${
-					updated.length
-				} ${updated.length === 1 ? 'citation' : 'citations'}.${
-					formatterFallback ? ` ${FORMATTER_FALLBACK_MESSAGE}` : ''
-				}`,
+				formatterFallback
+					? sprintf(
+							/* translators: 1: citation style label, 2: reformatted citation count, 3: localized citation/citations label, 4: formatter fallback message. */
+							__(
+								'Style changed to %1$s. Reformatted %2$d %3$s. %4$s',
+								'borges-bibliography-builder'
+							),
+							nextStyleLabel,
+							updated.length,
+							_n(
+								'citation',
+								'citations',
+								updated.length,
+								'borges-bibliography-builder'
+							),
+							FORMATTER_FALLBACK_MESSAGE
+					  )
+					: sprintf(
+							/* translators: 1: citation style label, 2: reformatted citation count, 3: localized citation/citations label. */
+							__(
+								'Style changed to %1$s. Reformatted %2$d %3$s.',
+								'borges-bibliography-builder'
+							),
+							nextStyleLabel,
+							updated.length,
+							_n(
+								'citation',
+								'citations',
+								updated.length,
+								'borges-bibliography-builder'
+							)
+					  ),
 				formatterFallback ? {} : { type: 'snackbar' }
 			);
 			if (formatterFallback) {

@@ -1,4 +1,4 @@
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useCallback, useMemo, useState } from '@wordpress/element';
 import { findDuplicateCitation } from '../lib/deduplicate';
 import {
@@ -140,7 +140,10 @@ export function useManualCitationActions({
 			if (findDuplicateCitation({ csl }, citationsRef.current)) {
 				announce(
 					'warning',
-					'No new citations added. Skipped 1 duplicate.'
+					__(
+						'No new citations added. Skipped 1 duplicate.',
+						'borges-bibliography-builder'
+					)
 				);
 				queueFocus({ type: 'notice' });
 				return;
@@ -209,8 +212,15 @@ export function useManualCitationActions({
 			announce(
 				formatterFallback ? 'warning' : 'success',
 				formatterFallback
-					? `Added 1 citation. ${FORMATTER_FALLBACK_MESSAGE}`
-					: 'Added 1 citation.',
+					? sprintf(
+							/* translators: %s: formatter fallback message. */
+							__(
+								'Added 1 citation. %s',
+								'borges-bibliography-builder'
+							),
+							FORMATTER_FALLBACK_MESSAGE
+					  )
+					: __('Added 1 citation.', 'borges-bibliography-builder'),
 				formatterFallback ? {} : { type: 'snackbar' }
 			);
 			queueFocus(
@@ -221,7 +231,10 @@ export function useManualCitationActions({
 		} catch (error) {
 			announce(
 				'error',
-				'Something went wrong while adding the citation. Please try again.'
+				__(
+					'Something went wrong while adding the citation. Please try again.',
+					'borges-bibliography-builder'
+				)
 			);
 			queueFocus({ type: 'notice' });
 		}

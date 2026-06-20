@@ -6,6 +6,7 @@
  */
 
 import { Cite } from '@citation-js/core';
+import { __ } from '@wordpress/i18n';
 import { MAX_ENTRIES_PER_PASTE } from './citation-limits';
 import '@citation-js/plugin-doi';
 import '@citation-js/plugin-bibtex';
@@ -81,7 +82,12 @@ async function resolvePmidCsl(pmid, fetchFn) {
 		return resolvePmidViaFetch(pmid, defaultFetchFn);
 	}
 
-	throw new Error('Fetch API unavailable for PMID resolution');
+	throw new Error(
+		__(
+			'Fetch API unavailable for PMID resolution',
+			'borges-bibliography-builder'
+		)
+	);
 }
 
 async function resolveDoiViaCrossRef(doi, fetchFn) {
@@ -542,7 +548,10 @@ function formatUnsupportedInputError() {
 }
 
 function formatLatexDocumentError() {
-	return 'This looks like LaTeX, not a bibliography entry. Paste a DOI, PMID, BibTeX entry, or supported citation instead.';
+	return __(
+		'This looks like LaTeX, not a bibliography entry. Paste a DOI, PMID, BibTeX entry, or supported citation instead.',
+		'borges-bibliography-builder'
+	);
 }
 
 function formatBackendParseError(format, err) {
@@ -554,18 +563,30 @@ function formatBackendParseError(format, err) {
 	}
 
 	if (format === 'pmid') {
-		return "Couldn't resolve the PMID. Check the number and try again.";
+		return __(
+			"Couldn't resolve the PMID. Check the number and try again.",
+			'borges-bibliography-builder'
+		);
 	}
 
 	if (format === 'doi') {
-		return "Couldn't parse the DOI. Check it and try again.";
+		return __(
+			"Couldn't parse the DOI. Check it and try again.",
+			'borges-bibliography-builder'
+		);
 	}
 
 	if (format === 'bibtex') {
-		return "Couldn't parse the BibTeX entry. Check it and try again.";
+		return __(
+			"Couldn't parse the BibTeX entry. Check it and try again.",
+			'borges-bibliography-builder'
+		);
 	}
 
-	return "Couldn't parse the citation. Check it and try again.";
+	return __(
+		"Couldn't parse the citation. Check it and try again.",
+		'borges-bibliography-builder'
+	);
 }
 
 /**
@@ -610,7 +631,12 @@ export async function parsePastedInput(
 	if (input.length > MAX_INPUT_SIZE) {
 		return {
 			entries: [],
-			errors: ['The pasted input is too large. Maximum size is 1 MB.'],
+			errors: [
+				__(
+					'The pasted input is too large. Maximum size is 1 MB.',
+					'borges-bibliography-builder'
+				),
+			],
 			truncated: false,
 			remainingInput: input.trim(),
 		};

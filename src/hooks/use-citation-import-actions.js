@@ -1,5 +1,5 @@
 import { useCallback } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import { partitionDuplicateCitations } from '../lib/deduplicate';
 import { SUPPORTED_INPUT_MESSAGE } from '../lib/input-support';
 import { sortCitations } from '../lib/sorter';
@@ -16,10 +16,6 @@ const FORMATTER_FALLBACK_MESSAGE = __(
 	'borges-bibliography-builder'
 );
 
-function pluralize(count, singular, plural = `${singular}s`) {
-	return `${count} ${count === 1 ? singular : plural}`;
-}
-
 function buildParseResultMessage({
 	addedCount,
 	duplicateCount,
@@ -32,34 +28,85 @@ function buildParseResultMessage({
 	const parts = [];
 
 	if (addedCount > 0) {
-		parts.push(`Added ${pluralize(addedCount, 'citation')}.`);
+		parts.push(
+			sprintf(
+				/* translators: %d: citation count. */
+				_n(
+					'Added %d citation.',
+					'Added %d citations.',
+					addedCount,
+					'borges-bibliography-builder'
+				),
+				addedCount
+			)
+		);
 	} else if (duplicateCount > 0 || errorCount > 0 || truncated) {
-		parts.push('No new citations added.');
+		parts.push(
+			__('No new citations added.', 'borges-bibliography-builder')
+		);
 	}
 
 	if (duplicateCount > 0) {
-		parts.push(`Skipped ${pluralize(duplicateCount, 'duplicate')}.`);
+		parts.push(
+			sprintf(
+				/* translators: %d: duplicate citation count. */
+				_n(
+					'Skipped %d duplicate.',
+					'Skipped %d duplicates.',
+					duplicateCount,
+					'borges-bibliography-builder'
+				),
+				duplicateCount
+			)
+		);
 	}
 
 	if (errorCount > 0) {
-		parts.push(`Couldn't parse ${pluralize(errorCount, 'item')}.`);
+		parts.push(
+			sprintf(
+				/* translators: %d: unparseable item count. */
+				_n(
+					"Couldn't parse %d item.",
+					"Couldn't parse %d items.",
+					errorCount,
+					'borges-bibliography-builder'
+				),
+				errorCount
+			)
+		);
 	}
 
 	if (truncated) {
-		parts.push('Only the first 50 items were processed.');
+		parts.push(
+			__(
+				'Only the first 50 items were processed.',
+				'borges-bibliography-builder'
+			)
+		);
 	}
 
 	if (reviewWarningCount > 0) {
 		parts.push(
-			`Review ${pluralize(
-				reviewWarningCount,
-				'imported record'
-			)} before publishing.`
+			sprintf(
+				/* translators: %d: imported record count. */
+				_n(
+					'Review %d imported record before publishing.',
+					'Review %d imported records before publishing.',
+					reviewWarningCount,
+					'borges-bibliography-builder'
+				),
+				reviewWarningCount
+			)
 		);
 	}
 
 	if (retainedUnparsedItems) {
-		parts.push('Unparsed items remain in the form.');
+		parts.push(
+			__(
+				'Unparsed items remain in the form.',
+				'borges-bibliography-builder'
+			)
+		);
 	}
 
 	if (formatterFallback) {
@@ -293,7 +340,10 @@ export function useCitationImportActions({
 		} catch (err) {
 			announce(
 				'error',
-				'Something went wrong while parsing. Please try again.'
+				__(
+					'Something went wrong while parsing. Please try again.',
+					'borges-bibliography-builder'
+				)
 			);
 			queueFocus({ type: 'notice' });
 		} finally {

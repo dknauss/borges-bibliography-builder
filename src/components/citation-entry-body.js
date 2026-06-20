@@ -1,4 +1,5 @@
 import { Button } from '@wordpress/components';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	CopyIcon,
 	DeleteIcon,
@@ -58,7 +59,11 @@ export function CitationEntryBody({
 					htmlFor={`bibliography-builder-edit-${citation.id}`}
 					className="bibliography-builder-edit-label"
 				>
-					{`Editing: ${getEntryLabel(citation)}`}
+					{sprintf(
+						/* translators: %s: citation label. */
+						__('Editing: %s', 'borges-bibliography-builder'),
+						getEntryLabel(citation)
+					)}
 				</label>
 				<input
 					id={`bibliography-builder-edit-${citation.id}`}
@@ -80,7 +85,11 @@ export function CitationEntryBody({
 				type="button"
 				className="bibliography-builder-entry-trigger"
 				onClick={handleEntryActivate}
-				aria-label={`Edit ${getEntryLabel(citation)}`}
+				aria-label={sprintf(
+					/* translators: %s: citation label. */
+					__('Edit %s', 'borges-bibliography-builder'),
+					getEntryLabel(citation)
+				)}
 			>
 				<span className="bibliography-builder-entry-main">
 					<span className="bibliography-builder-entry-text">
@@ -116,7 +125,14 @@ export function CitationEntryBody({
 				)}
 				{isStructuredEditable && (
 					<Button
-						label={`Edit fields for ${getEntryLabel(citation)}`}
+						label={sprintf(
+							/* translators: %s: citation label. */
+							__(
+								'Edit fields for %s',
+								'borges-bibliography-builder'
+							),
+							getEntryLabel(citation)
+						)}
 						showTooltip
 						className="bibliography-builder-action-button"
 						onClick={(event) => {
@@ -128,7 +144,11 @@ export function CitationEntryBody({
 					</Button>
 				)}
 				<Button
-					label={`Copy citation: ${getEntryLabel(citation)}`}
+					label={sprintf(
+						/* translators: %s: citation label. */
+						__('Copy citation: %s', 'borges-bibliography-builder'),
+						getEntryLabel(citation)
+					)}
 					showTooltip
 					className="bibliography-builder-action-button"
 					onClick={(event) => {
@@ -139,7 +159,11 @@ export function CitationEntryBody({
 					<CopyIcon className="bibliography-builder-action-icon" />
 				</Button>
 				<Button
-					label={`Edit citation: ${getEntryLabel(citation)}`}
+					label={sprintf(
+						/* translators: %s: citation label. */
+						__('Edit citation: %s', 'borges-bibliography-builder'),
+						getEntryLabel(citation)
+					)}
 					showTooltip
 					className="bibliography-builder-action-button"
 					onClick={(event) => {
@@ -151,7 +175,7 @@ export function CitationEntryBody({
 				</Button>
 				{isStructuredEditable && citation.displayOverride && (
 					<Button
-						label="Reset edits"
+						label={__('Reset edits', 'borges-bibliography-builder')}
 						showTooltip
 						className="bibliography-builder-action-button"
 						onClick={(event) => {
@@ -163,7 +187,14 @@ export function CitationEntryBody({
 					</Button>
 				)}
 				<Button
-					label={`Delete citation: ${getEntryLabel(citation)}`}
+					label={sprintf(
+						/* translators: %s: citation label. */
+						__(
+							'Delete citation: %s',
+							'borges-bibliography-builder'
+						),
+						getEntryLabel(citation)
+					)}
 					showTooltip
 					className="bibliography-builder-action-button bibliography-builder-action-button-delete"
 					onClick={(event) => {
