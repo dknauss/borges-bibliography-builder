@@ -3,31 +3,46 @@
 Gotchas in the third-party services and libraries Borges depends on, with the
 evidence and the workaround. Documented so they aren't rediagnosed from scratch.
 
-## citeproc-php: `<date … form="text">` renders nothing
+## citeproc-php: localized `form="text"` dates need locale date blocks we don't ship
 
 **Symptom:** bibliography entries silently dropped the publication year.
 
-**Cause:** `seboettg/citeproc-php` does **not** render
-`<date variable="issued" form="text"/>` — it produces empty output for the date.
-The styles that worked used an explicit `<date-part name="year"/>` instead.
+**This is NOT a citeproc-php bug** — it behaves exactly as the CSL spec
+requires. `<date variable="issued" form="text"/>` (no `<date-part>` children) is
+a *localized* date: the renderer pulls the parts to emit from the **active
+locale's `<date form="text">` block**
+(`Date::prepareDatePartsChildren` → `getDatePartsFromLocales` in
+`seboettg/citeproc-php`). This plugin ships a **deliberately minimal locale**
+(`packages/citation-style-language-locales/locales-en-US.xml`, ~19 lines) that
+defines a few terms and **no `<date>` format blocks at all** — a standard CSL
+`locales-en-US.xml` is ~300 lines and does define them. With no locale date
+definition and no explicit children, citeproc-php's fallback iterates an empty
+date-part list and returns an empty string. Correct per spec; the mismatch was
+ours (a locale-dependent style construct against a stripped locale).
 
-**This is NOT an `intl` problem.** It was first assumed to be the PHP `intl`
-extension (the formatter needs `intl`, and the Playground blueprint requires
-`features.intl`). Ruled out by direct repro: on a host **with** `intl` loaded,
-`form="text"` still rendered no year, while `<date-part name="year"/>` rendered
-`1963` for the same CSL. So `intl` presence is necessary for the formatter in
-general, but it is **not** the cause of the dropped year.
+**This is also NOT an `intl` problem.** `intl` was the first suspect (the
+formatter needs it, and the Playground blueprint requires `features.intl`).
+Ruled out by direct repro: on a host **with** `intl` loaded, `form="text"`
+still rendered no year, while `<date-part name="year"/>` rendered `1963` for the
+same CSL. `intl` is necessary for the formatter in general, but it is not the
+cause of the dropped year.
 
-**Workaround / rule:** never use `form="text"` for the issued date in a bundled
-style; use:
+**Rule / fix:** for bundled styles, use a *non-localized* date — explicit
+`<date-part name="year"/>`, which renders independently of the locale and yields
+exactly the year-only output a bibliography wants:
 
 ```xml
 <date variable="issued"><date-part name="year"/></date>
 ```
 
+(The spec-pure alternative — shipping the full standard locales — is far heavier
+and would drag in month/day formatting we don't want, so the non-localized
+date-part is the better choice here, not merely a workaround.)
+
 Guarded by `tests/phpunit/StyleYearRenderingTest.php` (static check + render
-check across every bundled style). Three styles had regressed this way:
-`chicago-notes-bibliography`, `oscola`, `modern-language-association`.
+check across every bundled style). Three styles had regressed to the localized
+form and dropped the year: `chicago-notes-bibliography`, `oscola`,
+`modern-language-association`.
 
 ## CrossRef: non-standard CSL `type` values
 

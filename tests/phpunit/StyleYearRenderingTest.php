@@ -6,11 +6,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 /**
  * Guards the bundled CSL styles against silently dropping the publication year.
  *
- * citeproc-php does not render `<date variable="issued" form="text"/>` (it
- * produces empty output even with the intl extension present), so styles must
- * use an explicit `<date-part name="year"/>`. See
- * docs/external-eccentricities.md. Three styles (Chicago notes, OSCOLA, MLA)
- * regressed this way and dropped the year on every entry.
+ * A localized `<date variable="issued" form="text"/>` pulls its parts from the
+ * active locale's `<date form="text">` block, which this plugin's deliberately
+ * minimal locale does not define, so citeproc-php renders nothing (spec-correct,
+ * not a library bug). Styles must use an explicit, locale-independent
+ * `<date-part name="year"/>`. See docs/external-eccentricities.md. Three styles
+ * (Chicago notes, OSCOLA, MLA) regressed this way and dropped the year.
  *
  * @package BibliographyBuilder
  */
