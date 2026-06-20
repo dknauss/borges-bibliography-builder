@@ -30,7 +30,7 @@ describe('validateAndSanitizeCsl', () => {
 		).toThrow('Invalid CSL type.');
 	});
 
-	it('throws when title is not a string (line 253)', () => {
+	it('throws when title is not a string', () => {
 		expect(() =>
 			validateAndSanitizeCsl({ type: 'book', title: 42 })
 		).toThrow('Invalid CSL title.');
@@ -40,6 +40,16 @@ describe('validateAndSanitizeCsl', () => {
 		const result = validateAndSanitizeCsl(MINIMAL_VALID);
 		expect(result.type).toBe('article-journal');
 		expect(result.title).toBe('A Test Article');
+	});
+
+	it('accepts standalone CSL types used by the formatter', () => {
+		for (const type of ['performance', 'periodical', 'regulation']) {
+			const result = validateAndSanitizeCsl({
+				type,
+				title: 'Standalone Title',
+			});
+			expect(result.type).toBe(type);
+		}
 	});
 
 	// ── prototype pollution prevention ───────────────────────────────────────
@@ -196,6 +206,26 @@ describe('validateAndSanitizeCsl', () => {
 		expect(result.issued['date-parts']).toEqual([[2023, 11]]);
 	});
 
+	it('accepts literal and raw dates without date-parts', () => {
+		const result = validateAndSanitizeCsl({
+			...MINIMAL_VALID,
+			issued: { literal: '<b>Spring 2026</b>' },
+			accessed: { raw: '<i>2026-06-20</i>' },
+		});
+
+		expect(result.issued.literal).toBe('Spring 2026');
+		expect(result.accessed.raw).toBe('2026-06-20');
+	});
+
+	it('throws when literal or raw date values are not strings', () => {
+		expect(() =>
+			validateAndSanitizeCsl({
+				...MINIMAL_VALID,
+				issued: { literal: 2026 },
+			})
+		).toThrow('Invalid CSL issued value.');
+	});
+
 	it('throws when issued is not an object (line 161)', () => {
 		expect(() =>
 			validateAndSanitizeCsl({
@@ -205,7 +235,7 @@ describe('validateAndSanitizeCsl', () => {
 		).toThrow('Invalid CSL issued value.');
 	});
 
-	it('throws when issued has no date-parts (line 170)', () => {
+	it('throws when issued has no supported date representation', () => {
 		expect(() =>
 			validateAndSanitizeCsl({
 				...MINIMAL_VALID,
@@ -261,12 +291,26 @@ describe('validateAndSanitizeCsl', () => {
 
 	// ── STRING_FIELDS validation ──────────────────────────────────────────────
 
-	it('throws when a string field contains a non-string value', () => {
+	it('coerces numeric string metadata fields to strings', () => {
+		const result = validateAndSanitizeCsl({
+			type: 'book',
+			title: 'Good',
+			volume: 12,
+			issue: 3,
+			edition: 2,
+		});
+
+		expect(result.volume).toBe('12');
+		expect(result.issue).toBe('3');
+		expect(result.edition).toBe('2');
+	});
+
+	it('throws when a string field contains a non-string non-number value', () => {
 		expect(() =>
 			validateAndSanitizeCsl({
 				type: 'book',
 				title: 'Good',
-				publisher: 42,
+				publisher: true,
 			})
 		).toThrow('Invalid CSL publisher.');
 	});

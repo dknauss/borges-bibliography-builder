@@ -195,6 +195,261 @@ final class RestEdgeCasesTest extends TestCase {
 		$this->assertSame( 'bibliography_builder_invalid_csl_item', $result->get_error_code() );
 	}
 
+	public function test_csl_sanitizer_rejects_list_shaped_csl_item(): void {
+		$result = bibliography_builder_validate_and_sanitize_csl_item(
+			array( 'book', 'Not an object' )
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	public function test_csl_sanitizer_rejects_non_array_csl_item(): void {
+		$result = bibliography_builder_validate_and_sanitize_csl_item( 'not an object' );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	public function test_csl_sanitizer_rejects_non_string_known_string_field(): void {
+		$result = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'  => 'book',
+				'title' => array( 'Nested title is invalid' ),
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	public function test_csl_sanitizer_rejects_non_array_name_list(): void {
+		$result = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'   => 'book',
+				'title'  => 'Invalid author list',
+				'author' => 'Smith',
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	public function test_csl_sanitizer_rejects_non_string_author_field(): void {
+		$result = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'   => 'book',
+				'title'  => 'Invalid author field',
+				'author' => array(
+					array(
+						'family' => array( 'Smith' ),
+						'given'  => 'Jane',
+					),
+				),
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	public function test_csl_sanitizer_accepts_and_strips_identifier_strings_and_arrays(): void {
+		$sanitized = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type' => 'book',
+				'title' => 'Identifiers',
+				'ISBN' => '<b>9780000000000</b>',
+				'ISSN' => array( '<i>1234-5678</i>', '8765-4321' ),
+			)
+		);
+
+		$this->assertIsArray( $sanitized );
+		$this->assertSame( '9780000000000', $sanitized['ISBN'] );
+		$this->assertSame( array( '1234-5678', '8765-4321' ), $sanitized['ISSN'] );
+	}
+
+	public function test_csl_sanitizer_rejects_invalid_identifier_values(): void {
+		$invalid_scalar = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'  => 'book',
+				'title' => 'Invalid identifier scalar',
+				'ISBN'  => 9780000000000,
+			)
+		);
+
+		$invalid_array_item = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'  => 'book',
+				'title' => 'Invalid identifier array',
+				'ISSN'  => array( '1234-5678', 87654321 ),
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $invalid_scalar );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $invalid_scalar->get_error_code() );
+		$this->assertInstanceOf( WP_Error::class, $invalid_array_item );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $invalid_array_item->get_error_code() );
+	}
+
+	public function test_csl_sanitizer_removes_nested_forbidden_keys(): void {
+		$sanitized = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'     => 'book',
+				'title'    => 'Nested forbidden keys',
+				'metadata' => array(
+					'safe'        => array(
+						'value'     => 'preserved',
+						'prototype' => array( 'polluted' => true ),
+					),
+					'constructor' => array( 'polluted' => true ),
+				),
+			)
+		);
+
+		$this->assertIsArray( $sanitized );
+		$this->assertSame( 'preserved', $sanitized['metadata']['safe']['value'] );
+		$this->assertArrayNotHasKey( 'prototype', $sanitized['metadata']['safe'] );
+		$this->assertArrayNotHasKey( 'constructor', $sanitized['metadata'] );
+	}
+
+	public function test_csl_sanitizer_accepts_accessed_date_and_normalizes_numeric_parts(): void {
+		$sanitized = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'     => 'webpage',
+				'title'    => 'Accessed date',
+				'accessed' => array(
+					'date-parts' => array(
+						array( '2026', 6.0, 20 ),
+					),
+				),
+			)
+		);
+
+		$this->assertIsArray( $sanitized );
+		$this->assertSame(
+			array( array( 2026, 6, 20 ) ),
+			$sanitized['accessed']['date-parts']
+		);
+	}
+
+	public function test_csl_sanitizer_accepts_literal_and_raw_dates(): void {
+		$sanitized = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'     => 'book',
+				'title'    => 'Literal date',
+				'issued'   => array( 'literal' => '<b>Spring 2026</b>' ),
+				'accessed' => array( 'raw' => '<i>2026-06-20</i>' ),
+			)
+		);
+
+		$this->assertIsArray( $sanitized );
+		$this->assertSame( 'Spring 2026', $sanitized['issued']['literal'] );
+		$this->assertSame( '2026-06-20', $sanitized['accessed']['raw'] );
+	}
+
+	public function test_csl_sanitizer_rejects_non_string_literal_or_raw_dates(): void {
+		$result = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'   => 'book',
+				'title'  => 'Bad literal date',
+				'issued' => array( 'literal' => array( 'Spring 2026' ) ),
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $result->get_error_code() );
+	}
+
+	public function test_csl_sanitizer_accepts_supported_standalone_types(): void {
+		foreach ( array( 'performance', 'periodical', 'regulation' ) as $type ) {
+			$sanitized = bibliography_builder_validate_and_sanitize_csl_item(
+				array(
+					'type'  => $type,
+					'title' => 'Standalone Title',
+				)
+			);
+
+			$this->assertIsArray( $sanitized );
+			$this->assertSame( $type, $sanitized['type'] );
+		}
+	}
+
+	public function test_csl_sanitizer_coerces_numeric_string_metadata_fields(): void {
+		$sanitized = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'    => 'book',
+				'title'   => 'Numeric metadata',
+				'volume'  => 12,
+				'issue'   => 3.0,
+				'edition' => 2,
+			)
+		);
+
+		$this->assertIsArray( $sanitized );
+		$this->assertSame( '12', $sanitized['volume'] );
+		$this->assertSame( '3', $sanitized['issue'] );
+		$this->assertSame( '2', $sanitized['edition'] );
+	}
+
+	public function test_csl_sanitizer_rejects_invalid_date_shapes(): void {
+		$list_shaped_date = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'   => 'book',
+				'title'  => 'List date',
+				'issued' => array( array( 2026 ) ),
+			)
+		);
+
+		$non_array_date_parts = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'   => 'book',
+				'title'  => 'Non-array date-parts',
+				'issued' => array( 'date-parts' => '2026' ),
+			)
+		);
+
+		$empty_date_parts = bibliography_builder_validate_and_sanitize_csl_item(
+			array(
+				'type'   => 'book',
+				'title'  => 'Empty date-parts',
+				'issued' => array( 'date-parts' => array() ),
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $list_shaped_date );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $list_shaped_date->get_error_code() );
+		$this->assertInstanceOf( WP_Error::class, $non_array_date_parts );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $non_array_date_parts->get_error_code() );
+		$this->assertInstanceOf( WP_Error::class, $empty_date_parts );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $empty_date_parts->get_error_code() );
+	}
+
+	public function test_csl_item_list_validation_wraps_invalid_item_position(): void {
+		$result = bibliography_builder_validate_and_sanitize_csl_items(
+			array(
+				array(
+					'type'  => 'book',
+					'title' => 'Valid',
+				),
+				array(
+					'type'  => 'not-valid',
+					'title' => 'Invalid',
+				),
+			)
+		);
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'bibliography_builder_invalid_csl_item', $result->get_error_code() );
+		$this->assertSame( 'Invalid CSL citation item at position 2.', $result->get_error_message() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
 	public function test_format_citations_defaults_style_to_chicago_when_absent(): void {
 		bibliography_builder_test_grant_cap( 7, 'edit_posts', 0 );
 		bibliography_builder_test_set_current_user( 7 );

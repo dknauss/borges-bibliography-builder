@@ -434,12 +434,15 @@ function bibliography_builder_get_known_csl_types() {
 		'map',
 		'motion_picture',
 		'musical_score',
+		'performance',
 		'pamphlet',
 		'paper-conference',
 		'patent',
+		'periodical',
 		'post',
 		'post-weblog',
 		'personal_communication',
+		'regulation',
 		'report',
 		'review',
 		'review-book',
@@ -594,53 +597,83 @@ function bibliography_builder_sanitize_csl_date( $issued ) {
 	$valid            = true;
 	$sanitized_issued = bibliography_builder_sanitize_csl_value( $issued, 0, $valid );
 
-	if ( ! $valid || ! is_array( $sanitized_issued ) || empty( $sanitized_issued['date-parts'] ) ) {
+	if ( ! $valid || ! is_array( $sanitized_issued ) ) {
 		return new WP_Error(
 			'bibliography_builder_invalid_csl_item',
-			__( 'Invalid CSL date-parts.', 'borges-bibliography-builder' ),
+			__( 'Invalid CSL date value.', 'borges-bibliography-builder' ),
 			array( 'status' => 400 )
 		);
 	}
 
-	if ( ! is_array( $sanitized_issued['date-parts'] ) ) {
-		return new WP_Error(
-			'bibliography_builder_invalid_csl_item',
-			__( 'Invalid CSL date-parts.', 'borges-bibliography-builder' ),
-			array( 'status' => 400 )
-		);
-	}
+	$has_valid_date = false;
 
-	$date_parts = array();
-
-	foreach ( $sanitized_issued['date-parts'] as $date_part ) {
-		if ( ! is_array( $date_part ) ) {
-			continue;
+	if ( array_key_exists( 'date-parts', $sanitized_issued ) ) {
+		if ( ! is_array( $sanitized_issued['date-parts'] ) || empty( $sanitized_issued['date-parts'] ) ) {
+			return new WP_Error(
+				'bibliography_builder_invalid_csl_item',
+				__( 'Invalid CSL date-parts.', 'borges-bibliography-builder' ),
+				array( 'status' => 400 )
+			);
 		}
 
-		$normalized_date_part = array();
+		$date_parts = array();
 
-		foreach ( $date_part as $part ) {
-			$normalized_part = bibliography_builder_normalize_csl_date_part( $part );
+		foreach ( $sanitized_issued['date-parts'] as $date_part ) {
+			if ( ! is_array( $date_part ) ) {
+				continue;
+			}
 
-			if ( null !== $normalized_part ) {
-				$normalized_date_part[] = $normalized_part;
+			$normalized_date_part = array();
+
+			foreach ( $date_part as $part ) {
+				$normalized_part = bibliography_builder_normalize_csl_date_part( $part );
+
+				if ( null !== $normalized_part ) {
+					$normalized_date_part[] = $normalized_part;
+				}
+			}
+
+			if ( ! empty( $normalized_date_part ) ) {
+				$date_parts[] = $normalized_date_part;
 			}
 		}
 
-		if ( ! empty( $normalized_date_part ) ) {
-			$date_parts[] = $normalized_date_part;
+		if ( empty( $date_parts ) ) {
+			return new WP_Error(
+				'bibliography_builder_invalid_csl_item',
+				__( 'Invalid CSL date-parts.', 'borges-bibliography-builder' ),
+				array( 'status' => 400 )
+			);
 		}
+
+		$sanitized_issued['date-parts'] = $date_parts;
+		$has_valid_date                 = true;
 	}
 
-	if ( empty( $date_parts ) ) {
+	foreach ( array( 'literal', 'raw' ) as $field ) {
+		if ( ! array_key_exists( $field, $sanitized_issued ) ) {
+			continue;
+		}
+
+		if ( ! is_string( $sanitized_issued[ $field ] ) ) {
+			return new WP_Error(
+				'bibliography_builder_invalid_csl_item',
+				__( 'Invalid CSL date value.', 'borges-bibliography-builder' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$sanitized_issued[ $field ] = bibliography_builder_strip_csl_html( $sanitized_issued[ $field ] );
+		$has_valid_date             = true;
+	}
+
+	if ( ! $has_valid_date ) {
 		return new WP_Error(
 			'bibliography_builder_invalid_csl_item',
 			__( 'Invalid CSL date-parts.', 'borges-bibliography-builder' ),
 			array( 'status' => 400 )
 		);
 	}
-
-	$sanitized_issued['date-parts'] = $date_parts;
 
 	return $sanitized_issued;
 }
@@ -833,15 +866,22 @@ function bibliography_builder_validate_and_sanitize_csl_item( $csl ) {
 	foreach ( bibliography_builder_get_csl_string_fields() as $field ) {
 		if ( array_key_exists( $field, $sanitized_csl ) ) {
 			if ( ! is_string( $sanitized_csl[ $field ] ) ) {
-				return new WP_Error(
-					'bibliography_builder_invalid_csl_item',
-					sprintf(
-						/* translators: %s: CSL field name. */
-						__( 'Invalid CSL %s.', 'borges-bibliography-builder' ),
-						$field
-					),
-					array( 'status' => 400 )
-				);
+				if (
+					'title' !== $field
+					&& ( is_int( $sanitized_csl[ $field ] ) || is_float( $sanitized_csl[ $field ] ) )
+				) {
+					$sanitized_csl[ $field ] = (string) $sanitized_csl[ $field ];
+				} else {
+					return new WP_Error(
+						'bibliography_builder_invalid_csl_item',
+						sprintf(
+							/* translators: %s: CSL field name. */
+							__( 'Invalid CSL %s.', 'borges-bibliography-builder' ),
+							$field
+						),
+						array( 'status' => 400 )
+					);
+				}
 			}
 
 			$sanitized_csl[ $field ] = bibliography_builder_strip_csl_html( $sanitized_csl[ $field ] );

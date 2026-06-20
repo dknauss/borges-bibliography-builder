@@ -26,12 +26,15 @@ export const KNOWN_CSL_TYPES = new Set([
 	'map',
 	'motion_picture',
 	'musical_score',
+	'performance',
 	'pamphlet',
 	'paper-conference',
 	'patent',
+	'periodical',
 	'post',
 	'post-weblog',
 	'personal_communication',
+	'regulation',
 	'report',
 	'review',
 	'review-book',
@@ -162,33 +165,54 @@ function sanitizeIssued(issued) {
 	}
 
 	const sanitizedIssued = sanitizeCslValue(issued);
+	let hasValidDate = false;
 
-	if (
-		!Array.isArray(sanitizedIssued['date-parts']) ||
-		!sanitizedIssued['date-parts'].length
-	) {
-		throw new Error('Invalid CSL issued date-parts.');
+	if (Object.prototype.hasOwnProperty.call(sanitizedIssued, 'date-parts')) {
+		if (
+			!Array.isArray(sanitizedIssued['date-parts']) ||
+			!sanitizedIssued['date-parts'].length
+		) {
+			throw new Error('Invalid CSL issued date-parts.');
+		}
+
+		const dateParts = sanitizedIssued['date-parts']
+			.map((datePart) => {
+				if (!Array.isArray(datePart)) {
+					return null;
+				}
+
+				const normalizedDatePart = datePart
+					.map(normalizeDatePart)
+					.filter((part) => part !== undefined);
+
+				return normalizedDatePart.length ? normalizedDatePart : null;
+			})
+			.filter(Boolean);
+
+		if (!dateParts.length) {
+			throw new Error('Invalid CSL issued date-parts.');
+		}
+
+		sanitizedIssued['date-parts'] = dateParts;
+		hasValidDate = true;
 	}
 
-	const dateParts = sanitizedIssued['date-parts']
-		.map((datePart) => {
-			if (!Array.isArray(datePart)) {
-				return null;
-			}
+	for (const field of ['literal', 'raw']) {
+		if (!Object.prototype.hasOwnProperty.call(sanitizedIssued, field)) {
+			continue;
+		}
 
-			const normalizedDatePart = datePart
-				.map(normalizeDatePart)
-				.filter((part) => part !== undefined);
+		if (typeof sanitizedIssued[field] !== 'string') {
+			throw new Error('Invalid CSL issued value.');
+		}
 
-			return normalizedDatePart.length ? normalizedDatePart : null;
-		})
-		.filter(Boolean);
-
-	if (!dateParts.length) {
-		throw new Error('Invalid CSL issued date-parts.');
+		sanitizedIssued[field] = stripHtmlTags(sanitizedIssued[field]);
+		hasValidDate = true;
 	}
 
-	sanitizedIssued['date-parts'] = dateParts;
+	if (!hasValidDate) {
+		throw new Error('Invalid CSL issued date-parts.');
+	}
 
 	return sanitizedIssued;
 }
@@ -204,6 +228,10 @@ function stripHtmlTags(text) {
 }
 
 function sanitizeStringField(value, field) {
+	if (typeof value === 'number' && field !== 'title') {
+		return String(value);
+	}
+
 	if (typeof value !== 'string') {
 		throw new Error(`Invalid CSL ${field}.`);
 	}
@@ -244,13 +272,6 @@ export function validateAndSanitizeCsl(csl) {
 
 	if (!KNOWN_CSL_TYPES.has(sanitizedCsl.type)) {
 		throw new Error('Invalid CSL type.');
-	}
-
-	if (
-		Object.prototype.hasOwnProperty.call(sanitizedCsl, 'title') &&
-		typeof sanitizedCsl.title !== 'string'
-	) {
-		throw new Error('Invalid CSL title.');
 	}
 
 	for (const field of NAME_LIST_FIELDS) {

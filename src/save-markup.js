@@ -53,11 +53,7 @@ export function renderBibliographySave(
 		<section
 			{...blockProps}
 			role="doc-bibliography"
-			aria-label={
-				ariaLabel ||
-				headingText ||
-				__('Bibliography', 'borges-bibliography-builder')
-			}
+			aria-label={ariaLabel || headingText || 'Bibliography'}
 		>
 			{headingText ? (
 				<HeadingTag className="bibliography-builder-heading">
