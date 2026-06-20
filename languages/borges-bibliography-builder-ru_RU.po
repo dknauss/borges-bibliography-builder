@@ -13,169 +13,169 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Domain: borges-bibliography-builder\n"
 
-#: src/edit.js:62
+#: src/edit.js:64
 msgid "Imported metadata may be incomplete. Verify before publishing."
 msgstr "Импортированные метаданные могут быть неполными. Проверьте их перед публикацией."
 
-#: src/edit.js:68
+#: src/edit.js:70
 msgid "Add citations"
 msgstr "Добавить источники"
 
-#: src/edit.js:69
+#: src/edit.js:71
 msgid "Paste / Import"
 msgstr "Вставить / Импортировать"
 
-#: src/edit.js:73
+#: src/edit.js:75
 msgid "Manual Entry"
 msgstr "Ручной ввод"
 
-#: src/edit.js:506
+#: src/edit.js:557
 msgid "Resolving…"
 msgstr "Запрос…"
 
-#: src/edit.js:510
-#: src/edit.js:526
+#: src/edit.js:561
+#: src/edit.js:577
 msgid "Add"
 msgstr "Добавить"
 
-#: src/edit.js:524
+#: src/edit.js:575
 msgid "Clear"
 msgstr "Очистить"
 
 #: src/components/structured-citation-editor.js:9
-#: src/hooks/use-manual-citation-actions.js:59
+#: src/hooks/use-manual-citation-actions.js:63
 msgid "Author(s)"
 msgstr "Автор(ы)"
 
 #: src/components/structured-citation-editor.js:13
-#: src/hooks/use-manual-citation-actions.js:63
+#: src/hooks/use-manual-citation-actions.js:67
 msgid "Title"
 msgstr "Название"
 
 #: src/components/structured-citation-editor.js:17
-#: src/hooks/use-manual-citation-actions.js:67
+#: src/hooks/use-manual-citation-actions.js:71
 msgid "Container"
 msgstr "Издание"
 
 #: src/components/structured-citation-editor.js:21
-#: src/hooks/use-manual-citation-actions.js:71
+#: src/hooks/use-manual-citation-actions.js:75
 msgid "Publisher"
 msgstr "Издатель"
 
 #: src/components/structured-citation-editor.js:25
-#: src/hooks/use-manual-citation-actions.js:75
+#: src/hooks/use-manual-citation-actions.js:79
 msgid "Year"
 msgstr "Год"
 
 #: src/components/structured-citation-editor.js:29
-#: src/hooks/use-manual-citation-actions.js:79
+#: src/hooks/use-manual-citation-actions.js:83
 msgid "Pages"
 msgstr "Страницы"
 
 #: src/components/structured-citation-editor.js:33
-#: src/hooks/use-manual-citation-actions.js:83
+#: src/hooks/use-manual-citation-actions.js:87
 msgid "DOI"
 msgstr "DOI"
 
 #: src/components/structured-citation-editor.js:37
-#: src/hooks/use-manual-citation-actions.js:87
+#: src/hooks/use-manual-citation-actions.js:91
 msgid "URL"
 msgstr "URL"
 
-#: src/edit.js:537
+#: src/edit.js:588
 msgid "Hide citation form"
 msgstr "Скрыть форму цитирования"
 
-#: src/edit.js:538
+#: src/edit.js:589
 msgid "Show citation form"
 msgstr "Показать форму цитирования"
 
-#: src/edit.js:575
-#: src/edit.js:589
+#: src/edit.js:626
+#: src/edit.js:640
 msgid "Settings"
 msgstr "Настройки"
 
-#: src/edit.js:580
+#: src/edit.js:631
 msgid "source"
 msgstr "источник"
 
-#: src/edit.js:584
+#: src/edit.js:635
 msgid "sources"
 msgstr "источника"
 
-#: src/edit.js:593
+#: src/edit.js:644
 msgid "Citation Style"
 msgstr "Стиль цитирования"
 
-#: src/edit.js:606
+#: src/edit.js:657
 msgid "Changing styles reformats auto-generated citations and keeps manual overrides intact."
 msgstr "Смена стиля переформатирует автоматически сгенерированные цитаты и сохраняет ручные правки."
 
-#: src/edit.js:625
+#: src/edit.js:676
 msgid "Visible Heading"
 msgstr "Видимый заголовок"
 
-#: src/edit.js:634
+#: src/edit.js:685
 msgid "Optional heading shown above the bibliography on the site front end when at least one citation exists."
 msgstr "Необязательный заголовок, отображаемый над библиографией на сайте при наличии хотя бы одного источника."
 
-#: src/edit.js:640
+#: src/edit.js:691
 msgid "Output JSON-LD"
 msgstr "Включить JSON-LD"
 
-#: src/edit.js:648
+#: src/edit.js:699
 msgid "Helps search engines and other tools understand the bibliography."
 msgstr "Помогает поисковым системам и другим инструментам распознавать библиографию."
 
-#: src/edit.js:654
+#: src/edit.js:705
 msgid "Output COinS"
 msgstr "Включить COinS"
 
-#: src/edit.js:662
+#: src/edit.js:713
 msgid "Lets Zotero and similar tools detect citations on the page."
 msgstr "Позволяет Zotero и аналогичным инструментам обнаруживать цитаты на странице."
 
-#: src/edit.js:668
+#: src/edit.js:719
 msgid "Output CSL-JSON"
 msgstr "Включить CSL-JSON"
 
-#: src/edit.js:676
+#: src/edit.js:727
 msgid "Makes citation data reusable by scholarly tools and services."
 msgstr "Делает данные цитирования доступными для повторного использования в научных инструментах и сервисах."
 
-#: src/edit.js:682
+#: src/edit.js:747
 msgid "Exports"
 msgstr "Экспорт"
 
-#: src/edit.js:688
+#: src/edit.js:753
 msgid "Copy bibliography"
 msgstr "Скопировать библиографию"
 
-#: src/edit.js:691
+#: src/edit.js:756
 msgid "Copies the current bibliography as plain text in the current order and style."
 msgstr "Копирует текущую библиографию как обычный текст в текущем порядке и стиле."
 
-#: src/edit.js:701
+#: src/edit.js:766
 msgid "Download CSL-JSON"
 msgstr "Скачать CSL-JSON"
 
-#: src/edit.js:704
+#: src/edit.js:769
 msgid "Downloads the current bibliography as structured citation data."
 msgstr "Скачивает текущую библиографию как структурированные данные цитирования."
 
-#: src/edit.js:714
+#: src/edit.js:779
 msgid "Download BibTeX"
 msgstr "Скачать BibTeX"
 
-#: src/edit.js:717
+#: src/edit.js:782
 msgid "Downloads the current bibliography as BibTeX for reference-manager and scholarly-writing workflows."
 msgstr "Скачивает текущую библиографию как BibTeX для менеджеров ссылок и научно-исследовательских рабочих процессов."
 
-#: src/edit.js:740
+#: src/edit.js:805
 msgid "Download RIS"
 msgstr "Скачать RIS"
 
-#: src/edit.js:743
+#: src/edit.js:808
 msgid "Downloads the current bibliography as RIS for citation managers and import/export workflows."
 msgstr "Скачивает текущую библиографию как RIS для менеджеров цитирования и процессов импорта/экспорта."
 
@@ -223,27 +223,27 @@ msgstr "Индекс блока библиографии внутри запис
 msgid "Response format: json, text, or csl-json."
 msgstr "Формат ответа: json, text или csl-json."
 
-#: src/edit.js:490
+#: src/edit.js:541
 #, fuzzy
 msgid "Add DOI(s), PubMed/PMID records, BibTeX entries, and citations in supported styles for books, articles, chapters, and webpages. Separate multiple formatted citations with a blank line."
 msgstr ""
 
-#: src/edit.js:602
+#: src/edit.js:653
 #, fuzzy
 msgid "IEEE/Vancouver: arrange entries to match the order they're first cited in your text."
 msgstr ""
 
-#: src/edit.js:618
+#: src/edit.js:669
 #, fuzzy
 msgid "OSCOLA convention groups bibliographies by source type (cases, legislation, books, articles, online). Borges currently renders a single alphabetized list. See Epic-OSCOLA for tracking."
 msgstr ""
 
-#: src/edit.js:727
+#: src/edit.js:792
 #, fuzzy
 msgid "Download BibLaTeX"
 msgstr ""
 
-#: src/edit.js:730
+#: src/edit.js:795
 #, fuzzy
 msgid "Downloads the current bibliography as BibLaTeX for LaTeX/Biber workflows with full Unicode support."
 msgstr ""
@@ -258,14 +258,14 @@ msgstr ""
 msgid "Move citation down"
 msgstr ""
 
-#: src/edit.js:77
-#: src/hooks/use-citation-import-actions.js:12
-#: src/hooks/use-manual-citation-actions.js:17
+#: src/edit.js:79
+#: src/hooks/use-citation-import-actions.js:14
+#: src/hooks/use-manual-citation-actions.js:19
 #, fuzzy
 msgid "Formatter unavailable; added fallback citation text."
 msgstr ""
 
-#: src/save-markup.js:84
+#: src/save-markup.js:87
 #, fuzzy
 msgid "Link to publication"
 msgstr ""
@@ -276,7 +276,6 @@ msgid "Sorry, you are not allowed to format bibliographies."
 msgstr ""
 
 #: bibliography-builder.php:816
-#: includes/pmid.php:66
 #, fuzzy
 msgid "Sorry, you are not allowed to resolve PubMed citations."
 msgstr ""
@@ -333,33 +332,27 @@ msgid "The citations could not be formatted."
 msgstr ""
 
 #: bibliography-builder.php:917
-#: includes/pmid.php:86
 #, fuzzy
 msgid "Invalid PubMed ID."
 msgstr ""
 
 #: bibliography-builder.php:946
-#: includes/pmid.php:123
 #, fuzzy
 msgid "The PubMed citation service could not be reached."
 msgstr ""
 
 #: bibliography-builder.php:969
-#: includes/pmid.php:100
-#: includes/pmid.php:140
 #, fuzzy
 msgid "The PubMed ID could not be resolved."
 msgstr ""
 
 #: bibliography-builder.php:724
 #: bibliography-builder.php:988
-#: includes/pmid.php:147
 #, fuzzy
 msgid "The PubMed citation service returned an error."
 msgstr ""
 
 #: bibliography-builder.php:1013
-#: includes/pmid.php:160
 #, fuzzy
 msgid "The PubMed citation service returned an invalid response."
 msgstr ""
@@ -448,4 +441,32 @@ msgstr ""
 #. Description of the plugin
 #: bibliography-builder.php
 msgid "Paste DOI, PubMed/PMID, BibTeX, or citation text into a formatted, auto-sorted bibliography."
+msgstr ""
+
+#: src/edit.js:733
+msgid "Per-entry Cite / Export"
+msgstr ""
+
+#: src/edit.js:741
+msgid "Add per-entry disclosure panels with copy and download links for BibTeX, RIS, and CSL-JSON."
+msgstr ""
+
+#: src/save-markup.js:129
+msgid "Cite / Export"
+msgstr ""
+
+#: src/save-markup.js:152
+msgid "RIS"
+msgstr ""
+
+#: src/save-markup.js:171
+msgid "CSL-JSON"
+msgstr ""
+
+#: src/save-markup.js:187
+msgid "BibTeX"
+msgstr ""
+
+#: src/save-markup.js:204
+msgid "BibLaTeX"
 msgstr ""

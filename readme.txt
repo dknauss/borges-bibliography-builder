@@ -4,7 +4,7 @@ Donate link: https://github.com/sponsors/dknauss
 Tags: bibliography, citation, doi, bibtex, academic
 Requires at least: 6.4
 Tested up to: 7.0
-Stable tag: 1.3.4
+Stable tag: 1.4.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -124,6 +124,13 @@ PubMed/PMID input connects through the plugin's authenticated WordPress REST pro
 * NLM Web Policies: https://www.nlm.nih.gov/web_policies.html
 
 == Changelog ==
+
+= 1.4.0 =
+* Add optional per-entry Cite / Export affordances to the public bibliography: a static, no-JS `<details>` disclosure panel under each entry with the citation text and one-click downloads for RIS, CSL-JSON, BibTeX, and BibLaTeX. Enable it per block with the new "Per-entry Cite / Export" toggle in the Metadata output panel; off by default.
+* Pre-compute BibTeX and BibLaTeX export data in the editor so the frontend downloads work without activating the plugin, and derive readable download filenames from each citation (for example, watson1953.ris).
+* Only pre-compute export data when the feature is enabled, so bibliographies that do not use Cite / Export incur no extra editor work.
+* Use a secure-context-safe helper for generating citation and bibliography IDs.
+* Remove a dead, never-loaded duplicate of the PMID resolver (includes/pmid.php) to eliminate a function-redeclare risk.
 
 = 1.3.4 =
 * Refresh the translation template and 19 seed PO/MO locale pairs from current source strings.

@@ -3,7 +3,7 @@
  * Plugin Name:       Borges Bibliography Builder
  * Plugin URI:        https://github.com/dknauss/Borges/
  * Description:       Paste DOI, PubMed/PMID, BibTeX, or citation text into a formatted, auto-sorted bibliography.
- * Version:           1.3.4
+ * Version:           1.4.0
  * Requires at least: 6.4
  * Tested up to:      7.0
  * Requires PHP:      7.4
