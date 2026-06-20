@@ -17,14 +17,27 @@ use PHPUnit\Framework\Attributes\DataProvider;
  */
 final class StyleYearRenderingTest extends TestCase {
 
-	private static function styles_dir() {
-		return dirname( __DIR__, 2 ) . '/packages/citation-style-language-styles';
+	/**
+	 * Both the committed source package and the installed copy the formatter
+	 * actually loads. `bibliography_builder_format_csl_items()` reads styles
+	 * from `vendor/citation-style-language/styles/` (a non-symlinked Composer
+	 * copy of `packages/`), so guarding only the source missed a stale vendor
+	 * copy that still dropped the year. Glob both so drift in either fails.
+	 */
+	private static function styles_dirs() {
+		$root = dirname( __DIR__, 2 );
+		return array(
+			'source'   => $root . '/packages/citation-style-language-styles',
+			'rendered' => $root . '/vendor/citation-style-language/styles',
+		);
 	}
 
 	public static function styleProvider() {
 		$cases = array();
-		foreach ( glob( self::styles_dir() . '/*.csl' ) as $file ) {
-			$cases[ basename( $file, '.csl' ) ] = array( $file );
+		foreach ( self::styles_dirs() as $label => $dir ) {
+			foreach ( glob( $dir . '/*.csl' ) as $file ) {
+				$cases[ $label . ': ' . basename( $file, '.csl' ) ] = array( $file );
+			}
 		}
 		return $cases;
 	}

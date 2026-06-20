@@ -44,6 +44,38 @@ check across every bundled style). Three styles had regressed to the localized
 form and dropped the year: `chicago-notes-bibliography`, `oscola`,
 `modern-language-association`.
 
+## Build: the formatter renders from `vendor/`, not `packages/`
+
+The PHP formatter (`bibliography_builder_format_csl_items`) loads style XML from
+`vendor/citation-style-language/styles/`, **not** from the
+`packages/citation-style-language-styles/` source. The `packages/` dir is a
+Composer *path* package with `"symlink": false`, so `composer install`
+**copies** it into `vendor/`. Consequences that have bitten us:
+
+- Editing a style under `packages/` has **no effect** until `composer install`
+  re-copies it to `vendor/` (or you copy it by hand). A stale `vendor/` will keep
+  rendering the old style even though the source looks fixed.
+- A test that globs only `packages/` gives false confidence — it passes while the
+  rendered `vendor/` copy is still broken. `StyleYearRenderingTest` therefore
+  globs **both** directories.
+- The release zip is safe: `scripts/package-release.sh` runs `composer install`
+  into a clean staging dir, so it always copies the current `packages/` source.
+- The formatter also caches rendered HTML in a `bbb_*` transient (1 h TTL) keyed
+  by items + style *key* — **not** by style file content. After changing a style
+  file, clear those transients (or wait out the TTL) or you'll see stale output.
+
+## CrossRef / PubMed: author names returned in ALL CAPS
+
+Some CrossRef and PubMed records return author family (and sometimes given)
+names in **all uppercase** — e.g. `TURING` from CrossRef for
+`10.1093/mind/LIX.236.433`, and the Watson/Crick authors from the PubMed
+resolver. The block stores and renders CSL names verbatim, so these surface as
+`TURING, A. M.` in every style (it is *data*, not a style-`text-case` setting —
+confirmed by rendering the same record through styles with no uppercase rule).
+Normalizing all-caps names to title case is a separate, deliberately deferred
+enhancement (it must avoid mangling genuine acronyms, particles like "van der",
+and initials). Tracked in `.planning/todos/`.
+
 ## CrossRef: non-standard CSL `type` values
 
 **Symptom:** some DOIs (e.g. university-press books like
