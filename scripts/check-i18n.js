@@ -37,6 +37,20 @@ const FORBIDDEN_TEXT_PATTERNS = [
 	/translated into 19 locales/i,
 	/official generated language pack for\s+the plugin:\s+`?ru_RU`?/i,
 ];
+const FORBIDDEN_SOURCE_I18N_PATTERNS = [
+	/`Added 1 citation\./,
+	/`Citation removed\./,
+	/`Moved '\$\{/,
+	/`Style changed to \$\{/,
+	/`Editing: \$\{/,
+	/`Edit \$\{/,
+	/`Edit fields for \$\{/,
+	/`Copy citation: \$\{/,
+	/`Delete citation: \$\{/,
+	/\? 'citation' : 'citations'/,
+	/\? 'slot' : 'slots'/,
+	/\? 'remains' : 'remain'/,
+];
 
 function decodePoString(raw) {
 	return JSON.parse(raw);
@@ -152,6 +166,53 @@ function scanForbiddenText(failures) {
 	}
 }
 
+function walkFiles(dir, callback) {
+	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+		if (entry.name === 'node_modules' || entry.name === 'vendor') {
+			continue;
+		}
+
+		const entryPath = path.join(dir, entry.name);
+		if (entry.isDirectory()) {
+			walkFiles(entryPath, callback);
+			continue;
+		}
+
+		callback(entryPath);
+	}
+}
+
+function scanSourceI18n(failures) {
+	const srcDir = path.join(ROOT, 'src');
+	if (!fs.existsSync(srcDir)) {
+		return;
+	}
+
+	walkFiles(srcDir, (filePath) => {
+		if (
+			!filePath.endsWith('.js') ||
+			filePath.endsWith('.test.js') ||
+			filePath.includes(`${path.sep}__snapshots__${path.sep}`) ||
+			filePath.includes(`${path.sep}benchmarks${path.sep}`)
+		) {
+			return;
+		}
+
+		const content = fs.readFileSync(filePath, 'utf8');
+		for (const pattern of FORBIDDEN_SOURCE_I18N_PATTERNS) {
+			if (pattern.test(content)) {
+				addFailure(
+					failures,
+					`${path.relative(
+						ROOT,
+						filePath
+					)} contains an untranslated source UI string matching ${pattern}`
+				);
+			}
+		}
+	});
+}
+
 function main() {
 	const failures = [];
 
@@ -213,6 +274,7 @@ function main() {
 	}
 
 	scanForbiddenText(failures);
+	scanSourceI18n(failures);
 
 	if (failures.length > 0) {
 		console.error('i18n validation failed:');

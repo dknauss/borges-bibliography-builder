@@ -41,7 +41,25 @@
 			"<rootDir>/tests/e2e/",
 			"<rootDir>/.claude/",
 			"<rootDir>/.tmp/"
-		]
+		],
+		"collectCoverageFrom": [
+			"src/**/*.js",
+			"!src/**/*.test.js",
+			"!src/**/__tests__/**",
+			"!src/**/__fixtures__/**",
+			"!src/**/__snapshots__/**",
+			"!src/benchmarks/**",
+			"!src/test-utils/**",
+			"!src/**/test-utils/**"
+		],
+		"coverageThreshold": {
+			"global": {
+				"statements": 90,
+				"branches": 80,
+				"functions": 90,
+				"lines": 90
+			}
+		}
 	},
 	"dependencies": {
 		"@citation-js/core": "0.7.18",
