@@ -132,6 +132,7 @@ PubMed/PMID input connects through the plugin's authenticated WordPress REST pro
 * Use a secure-context-safe helper for generating citation and bibliography IDs.
 * Remove a dead, never-loaded duplicate of the PMID resolver (includes/pmid.php) to eliminate a function-redeclare risk.
 * Fix DOI imports for works CrossRef labels with a non-standard type such as "monograph" (common for university-press books), which previously failed to import; unrecognized types now map to a sensible CSL type or fall back gracefully instead of aborting the import.
+* Fix the default Chicago Notes-Bibliography style (and OSCOLA and MLA) dropping the publication year on every entry; those styles used an issued-date form the formatter does not render. All bundled styles now show the year, guarded by a regression test.
 
 = 1.3.4 =
 * Refresh the translation template and 19 seed PO/MO locale pairs from current source strings.
