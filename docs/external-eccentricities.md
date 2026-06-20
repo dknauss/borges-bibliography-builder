@@ -72,9 +72,16 @@ names in **all uppercase** — e.g. `TURING` from CrossRef for
 resolver. The block stores and renders CSL names verbatim, so these surface as
 `TURING, A. M.` in every style (it is *data*, not a style-`text-case` setting —
 confirmed by rendering the same record through styles with no uppercase rule).
-Normalizing all-caps names to title case is a separate, deliberately deferred
-enhancement (it must avoid mangling genuine acronyms, particles like "van der",
-and initials). Tracked in `.planning/todos/`.
+
+**Normalized as of 1.4.0.** `src/lib/normalize-author-names.js` title-cases
+fully-uppercase personal names (`family`/`given` on `author`/`editor`/
+`reviewed-author`), wired into `normalizeResolvedCsl` so it runs for every
+machine-resolved source (DOI/PMID/BibTeX/free text) but not manual entry. It
+deliberately leaves already-cased names, dotted/short initials (`A. M.`, `JD`),
+caseless scripts (CJK), and organization `literal` names (acronyms like `IEEE`)
+untouched. Known limitation: a name the *source* sends all-caps with internal
+caps (`MCCULLOCH`) flattens to simple title case (`Mcculloch`) — unrecoverable
+without a name dictionary, still better than the all-caps form.
 
 ## CrossRef: non-standard CSL `type` values
 

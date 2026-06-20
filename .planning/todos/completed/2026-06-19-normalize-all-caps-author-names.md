@@ -43,3 +43,16 @@ integration case. Decide whether to apply to `given` as well as `family`.
 
 Found during 1.4.0 style verification; deferred from the year-fix PR (#47)
 because it is a distinct data-normalization concern with real edge cases.
+
+## Resolution (2026-06-19)
+
+Pulled forward into 1.4.0 at the user's request. Implemented in
+`src/lib/normalize-author-names.js` (`normalizeNameToken` /
+`normalizeCslNameCase`), wired into `normalizeResolvedCsl` in `parser.js` so it
+runs for every machine-resolved source but not manual entry. Family names are
+title-cased aggressively; given names keep short concatenated initials (`JD`).
+Particles, hyphen/apostrophe names, dotted initials, caseless scripts, and
+organization `literal` names are preserved. Known limitation documented and
+tested: source-all-caps internal caps (`MCCULLOCH` → `Mcculloch`) flatten.
+Covered by `src/lib/normalize-author-names.test.js` (34 cases) plus a CrossRef
+end-to-end case in `parser.test.js`. Shipped in PR #47.
