@@ -580,12 +580,13 @@ describe('parsePastedInput', () => {
 		});
 	});
 
-	it('title-cases ALL-CAPS author names returned by CrossRef', async () => {
+	it('title-cases ALL-CAPS author names and titles returned by CrossRef', async () => {
 		const fetchFn = jest.fn().mockResolvedValue({
 			ok: true,
 			json: async () => ({
 				type: 'journal-article',
-				title: 'Computing Machinery and Intelligence',
+				title: 'I.—COMPUTING MACHINERY AND INTELLIGENCE',
+				'container-title': 'Mind',
 				DOI: '10.1093/mind/LIX.236.433',
 				author: [{ given: 'A. M.', family: 'TURING' }],
 			}),
@@ -603,6 +604,10 @@ describe('parsePastedInput', () => {
 		expect(result.entries[0].csl.author).toEqual([
 			{ given: 'A. M.', family: 'Turing' },
 		]);
+		expect(result.entries[0].csl.title).toBe(
+			'I.—Computing Machinery and Intelligence'
+		);
+		expect(result.entries[0].csl['container-title']).toBe('Mind');
 	});
 
 	it('reuses DOI metadata for duplicate DOI values within one paste', async () => {

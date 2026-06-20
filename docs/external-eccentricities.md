@@ -64,24 +64,66 @@ Composer *path* package with `"symlink": false`, so `composer install`
   by items + style *key* — **not** by style file content. After changing a style
   file, clear those transients (or wait out the TTL) or you'll see stale output.
 
-## CrossRef / PubMed: author names returned in ALL CAPS
+## CrossRef / PubMed: author names AND titles returned in ALL CAPS
 
-Some CrossRef and PubMed records return author family (and sometimes given)
-names in **all uppercase** — e.g. `TURING` from CrossRef for
-`10.1093/mind/LIX.236.433`, and the Watson/Crick authors from the PubMed
-resolver. The block stores and renders CSL names verbatim, so these surface as
-`TURING, A. M.` in every style (it is *data*, not a style-`text-case` setting —
-confirmed by rendering the same record through styles with no uppercase rule).
+Some CrossRef and PubMed records return **author names** and/or the **work
+title** in all uppercase. The casing originates in the *publisher-deposited
+metadata*, which CrossRef stores and serves **verbatim** (CrossRef does not
+normalize member-deposited title/name case — this is why title case varies
+wildly between publishers). The block likewise renders CSL verbatim, so these
+surface as shouting. Confirmed examples:
 
-**Normalized as of 1.4.0.** `src/lib/normalize-author-names.js` title-cases
-fully-uppercase personal names (`family`/`given` on `author`/`editor`/
-`reviewed-author`), wired into `normalizeResolvedCsl` so it runs for every
-machine-resolved source (DOI/PMID/BibTeX/free text) but not manual entry. It
-deliberately leaves already-cased names, dotted/short initials (`A. M.`, `JD`),
-caseless scripts (CJK), and organization `literal` names (acronyms like `IEEE`)
-untouched. Known limitation: a name the *source* sends all-caps with internal
-caps (`MCCULLOCH`) flattens to simple title case (`Mcculloch`) — unrecoverable
-without a name dictionary, still better than the all-caps form.
+- `10.1093/mind/LIX.236.433` (Turing, *Mind*, Oxford University Press) — CrossRef
+  returns both the author `TURING` **and** the title
+  `I.—COMPUTING MACHINERY AND INTELLIGENCE` in all caps.
+- The Watson/Crick authors from the PubMed resolver come back uppercased.
+- By contrast `10.1007/BF02478259` (McCulloch & Pitts, Springer) comes back
+  correctly cased and needs no normalization — it is per-record/per-publisher,
+  not universal.
+
+It is *data*, not a style-`text-case` setting — confirmed by rendering the same
+record through styles with no uppercase rule. **No upstream bug to file:** see
+"Upstream status" below.
+
+**Normalized as of 1.4.0**, at the `normalizeResolvedCsl` choke point (runs for
+every machine-resolved source — DOI/PMID/BibTeX/free text — but not manual
+entry, where the user controls casing):
+
+- **Names** — `src/lib/normalize-author-names.js` title-cases fully-uppercase
+  `family`/`given` on `author`/`editor`/`reviewed-author`. Leaves already-cased
+  names, dotted/short initials (`A. M.`, `JD`), caseless scripts (CJK), and
+  organization `literal` names (acronyms like `IEEE`) untouched.
+- **Titles** — `src/lib/normalize-title-case.js` title-cases fully-uppercase
+  `title`/`container-title` with minor-word handling (`the`, `of`, `and`…
+  lowercased except first/last word and after a sentence break). Leaves
+  already-cased titles (the common case, incl. sentence-case article titles)
+  untouched.
+
+**Known limitations** (both only reached when the *source* is already all-caps,
+so the blast radius is the minority of records that arrive shouting):
+
+- Internal caps cannot be recovered without a dictionary: a name like
+  `MCCULLOCH` flattens to `Mcculloch`; `MACDONALD` to `Macdonald`.
+- Acronyms inside an all-caps **title** cannot be told apart from ordinary words
+  and flatten to title case: `THE ROLE OF DNA` → `The Role of Dna`.
+- All-caps titles become **title** case, which can look slightly different from a
+  neighbouring entry whose publisher deposited a **sentence**-case title. Both
+  are readable; title case was chosen because it never produces an obviously
+  wrong lowercase proper noun (as sentence case would, e.g. `america`).
+
+Each limitation is locked in by an explicit test so the behaviour is intentional,
+not a surprise.
+
+**Upstream status — nothing actionable to file.** The all-caps originates in the
+*publisher's deposited metadata* (e.g. Oxford University Press for the Mind
+record), not in CrossRef, the PubMed resolver, citeproc-php, or this plugin.
+CrossRef intentionally serves member deposits verbatim and does not normalize
+case, so a bug report there would be declined by design; the only true "fix at
+source" is the publisher re-depositing corrected metadata, which is not
+practical to pursue per record. Client-side normalization (what we do here) is
+the standard remedy and is what other citation tools do. So: **do not report
+upstream** — this is expected third-party data variance, now handled locally and
+documented.
 
 ## CrossRef: non-standard CSL `type` values
 
