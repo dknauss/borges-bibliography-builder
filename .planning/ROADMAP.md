@@ -204,6 +204,88 @@ CSL-JSON script blocks.
 | **ISAN**              | Evaluate niche media support | Identifies audiovisual works. Could support film/media bibliographies; requires resolver and CSL `motion_picture`/broadcast mapping review.                                                                                                                        |
 | **EIDR**              | Evaluate niche media support | Identifies movies/TV and related audiovisual assets. Similar to ISAN; useful for media studies if resolver access and metadata quality are acceptable.                                                                                                             |
 
+## Free-text parsing and embedded-identifier resolution backlog
+
+Raised 2026-06-21 from user-reported failures: a simple monograph or article
+that resolves cleanly when pasted as a bare DOI or PMID **fails** when the same
+work is pasted as a full free-text citation — even when that citation carries a
+DOI/PMID/URL at the end. The asymmetry is the problem: when an authoritative
+identifier is present in the text, the plugin should resolve it, not fall back
+to lossy heuristic parsing.
+
+### Root cause
+
+-   `detectFormat()` in `src/lib/parser.js` only recognizes identifiers when the
+    **entire** chunk is the identifier. `DOI_ONLY_REGEX` and `PMID_REGEX` are
+    both anchored (`^…$`), so a DOI/PMID embedded inside a longer citation line
+    is never extracted.
+-   Such input therefore routes to `freetext`, which runs the heuristic regex
+    tower in `src/lib/free-text-parser.js`. That tower has no reliable generic
+    "Author. _Title_. Place: Publisher, Year. + trailing identifier/URL" path,
+    so well-formed monographs fall through to the limited-support message.
+
+### Tier 1 — Embedded-identifier extraction (highest priority)
+
+Before treating a chunk as free text, scan it for an embedded DOI
+(`10.\d{4,}/…`) or PMID and, when found, route it to the **existing** DOI/PMID
+resolver backend instead of the heuristic parser. This is the resolver-layer
+approach already mandated by the identifier backlog above — it turns a lossy
+guess into an authoritative CrossRef/NCBI lookup, regardless of how the
+surrounding text was formatted.
+
+Acceptance goals:
+
+-   a citation containing a DOI or PMID anywhere in the line resolves via the
+    identifier backend and produces a clean CSL-JSON record
+-   extraction is specific (`10.\d{4,}/` for DOI; existing PMID shape) to avoid
+    false positives from identifier-shaped substrings inside titles
+-   on resolver failure, degrade gracefully back to the heuristic free-text
+    parse and then to the limited-support message — never silently drop input
+-   extracted DOIs flow through the existing DOI dedup/normalization path
+    (`normalizeDoiValueForLookup`, `existingDoiValues`)
+-   no new SSRF surface: reuse fixed-host CrossRef/NCBI resolvers and the
+    authenticated PMID REST proxy only; do not add arbitrary-URL fetching
+-   TDD: write failing extraction/detection unit tests first
+    (`expect(extractEmbeddedIdentifier(input)).toEqual(…)`), then implement.
+    Add fixtures to `docs/free-text-samples.md` and migrate the now-supported
+    cases out of `docs/free-text-unsupported-samples.md`
+
+### Tier 2 — Generic monograph/article free-text fallback
+
+For text with **no** identifier, add a tolerant
+"Author(s). _Title_. Place: Publisher, Year." parser that ignores trailing
+notes/URLs, hardening the cases currently listed in
+`docs/free-text-unsupported-samples.md` (annotated entries, full calendar
+dates, newspaper style). This is inherently a heuristic guess and lower
+priority than identifier resolution; keep fail-closed behavior with a clear
+message for anything it cannot model confidently.
+
+### Tier 3 — Direction, not committed work
+
+Robust free-text reference parsing is a solved-ish problem via CRF/ML models
+(e.g. AnyStyle). That is out of scope for in-browser JS today, but it is the
+honest long-term ceiling for Tier 2 and frames the outreach below. Do not
+start; record as direction only.
+
+### External expertise / outreach
+
+Two upstream experts are directly relevant when executing this track (fuller
+roundup captured in the 2026-06-21 planning discussion):
+
+-   **Lars Willighagen** — author/maintainer of citation-js, the plugin's DOI /
+    BibTeX dependency. GitHub `@larsgw`, Mastodon `@larsgw@mastodon.social`.
+    First contact for parsing/resolution behavior in our existing stack.
+-   **Sylvester Keil** — author of AnyStyle (CRF free-text reference parser) and
+    citeproc-ruby. GitHub `@inukshuk`. Reference point for Tier 2/3 free-text
+    parsing approaches.
+
+### Status
+
+-   backlog, ready to plan; Tier 1 is a small, well-scoped, TDD-able change and
+    is the recommended next parser task
+-   do not bundle Tier 2/3 into the Tier 1 change — ship the identifier
+    extraction win first, then evaluate heuristic fallback separately
+
 ## Performance hardening track
 
 Grounded in the 2026-04-04 Xdebug/profile review:
@@ -705,3 +787,25 @@ Plans:
 -   [ ] 04-02-PLAN.md — save markup: <details> disclosure panels with RIS/CSL-JSON/BibTeX/BibLaTeX data URI links
 -   [ ] 04-03-PLAN.md — editor pre-computation of BibTeX and BibLaTeX per-citation export strings
 -   [ ] 04-04-PLAN.md — CSS reset for hanging-indent, editor inspector toggle, human verification
+
+### Phase 7: Free-text embedded-identifier resolution (Tier 1)
+
+-   **Goal:** When a free-text citation pasted into the block contains an
+    embedded DOI (`10.\d{4,}/…`) or PMID, extract that identifier and resolve it
+    through the existing DOI/PMID resolver backend before falling back to the
+    heuristic free-text parser — so a work that resolves cleanly as a bare
+    identifier no longer fails when pasted as a full citation that carries the
+    identifier inline. Scope is Tier 1 only.
+-   **Requirements:** specific extraction that avoids false positives from
+    identifier-shaped substrings inside titles; graceful degradation to the
+    heuristic free-text parse and then the limited-support message on resolver
+    failure; reuse of the existing DOI dedup/normalization path
+    (`normalizeDoiValueForLookup`, `existingDoiValues`); no new SSRF surface
+    (fixed-host CrossRef/NCBI resolvers and the authenticated PMID REST proxy
+    only); TDD-first with fixtures added to `docs/free-text-samples.md` and the
+    now-supported cases migrated out of `docs/free-text-unsupported-samples.md`.
+    Explicitly excludes Tier 2 (generic monograph fallback) and Tier 3
+    (CRF/ML free-text parsing).
+-   **Depends on:** existing DOI/PMID resolver backends in `src/lib/parser.js`.
+-   **Detail:** see the "Free-text parsing and embedded-identifier resolution
+    backlog" section above.
