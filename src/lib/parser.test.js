@@ -1540,4 +1540,62 @@ describe('extractEmbeddedIdentifier', () => {
 
 		expect(result.rawValue).toBe(chunk);
 	});
+
+	// DOI false-positive guards
+	it('returns null for "Chapter 10. Methodology" — no slash+path after 10.NNNN', () => {
+		expect(
+			extractEmbeddedIdentifier('Chapter 10. Methodology of the study.')
+		).toBeNull();
+	});
+
+	it('returns null for "Table 10.1 and Section 10.2.3" — decimal refs without DOI path', () => {
+		expect(
+			extractEmbeddedIdentifier(
+				'See Table 10.1 and Section 10.2.3 for detail.'
+			)
+		).toBeNull();
+	});
+
+	it('returns null for "Pages 10.1000" — 10.NNNN without a slash and path', () => {
+		expect(
+			extractEmbeddedIdentifier(
+				'Pages 10.1000 covered in the 2019 edition.'
+			)
+		).toBeNull();
+	});
+
+	// PMID false-positive guards
+	it('returns null for a bare 8-digit phone/support number without PMID label', () => {
+		expect(
+			extractEmbeddedIdentifier('Call 12345678 for support.')
+		).toBeNull();
+	});
+
+	it('returns null for an 8-digit page range without PMID label', () => {
+		expect(
+			extractEmbeddedIdentifier('pp. 12345678-12345680')
+		).toBeNull();
+	});
+
+	// DOI-over-PMID precedence
+	it('returns DOI when both a DOI and a labeled PMID are present in the same chunk', () => {
+		const chunk =
+			'Author. Title. https://doi.org/10.1234/abcd PMID: 12345678';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('doi');
+		expect(result.value).toMatch(/10\.1234\/abcd/);
+	});
+
+	// Full DOI path with special characters
+	it('captures a DOI path containing hyphens, underscores, and parentheses intact', () => {
+		const chunk =
+			'Harris CR et al. Nature 585 (2020): 357-362. https://doi.org/10.1038/s41586-020-2649-2';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('doi');
+		expect(result.value).toMatch(/10\.1038\/s41586-020-2649-2$/);
+	});
 });
