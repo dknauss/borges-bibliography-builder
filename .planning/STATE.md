@@ -1,6 +1,6 @@
 # Project State
 
-_Last reviewed: 2026-06-21. Phase 07 Plan 02 complete._
+_Last reviewed: 2026-06-21. Phase 07 Plan 03 complete. Phase 07 complete._
 
 ## Current Focus
 
@@ -56,6 +56,12 @@ _Last reviewed: 2026-06-21. Phase 07 Plan 02 complete._
 
 ## Last Activity
 
+- Phase 07 Plan 03 complete (2026-06-21): Updated fixture documentation to document embedded-identifier
+  resolution support. Added "Supported embedded-identifier samples" section to docs/free-text-samples.md
+  with canonical embedded-DOI case (10.1234/abcd) and embedded-PMID case (PMID: 12345678). Added
+  clarifying note to docs/free-text-unsupported-samples.md: inline DOI/PMID citations are no longer
+  unsupported as of Phase 7. Phase 07 is now complete.
+  Commit: `0b2c073` (docs).
 - Phase 07 Plan 02 complete (2026-06-21): Wired `extractEmbeddedIdentifier` into `detectFormat` routing
   embedded DOIs/PMIDs through CrossRef/NCBI backends. Added graceful degradation: resolver fail -> freetext
   -> SUPPORTED_INPUT_MESSAGE. Dedup path unchanged — embedded DOI items flow through existing existingDoiSet

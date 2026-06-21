@@ -809,7 +809,7 @@ Plans:
 -   **Depends on:** existing DOI/PMID resolver backends in `src/lib/parser.js`.
 -   **Detail:** see the "Free-text parsing and embedded-identifier resolution
     backlog" section above.
--   **Plans:** 2/3 plans executed
+-   **Plans:** 3/3 plans complete
     -   [x] 07-01-PLAN.md — extractEmbeddedIdentifier helper: unanchored DOI/PMID extraction, false-positive guards, DOI-over-PMID precedence (unit)
     -   [x] 07-02-PLAN.md — wire detectFormat to existing resolvers, graceful degradation to freetext then support message, dedup parity + no-new-SSRF (integration)
     -   [ ] 07-03-PLAN.md — document embedded-identifier supported samples; clarify unsupported-samples doc (docs)
