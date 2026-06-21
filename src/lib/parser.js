@@ -23,6 +23,14 @@ const DOI_ONLY_REGEX =
 	/^(?:(?:https?:\/\/)?(?:dx\.)?doi\.org\/|(?:https?:\/\/)?doi:)?10\.\d{4,}\/[^\s]+$/i;
 const BIBTEX_REGEX = /@\w+\{/;
 const PMID_REGEX = /^PMID:\s*(\d{1,8})$/i;
+// Unanchored variants — find an identifier anywhere inside a longer free-text string.
+// EMBEDDED_DOI_REGEX: requires registrant prefix (10.\d{4,}/) plus at least one path
+// character to avoid matching bare decimals or chapter references like "Chapter 10.".
+const EMBEDDED_DOI_REGEX =
+	/(?:(?:https?:\/\/)?(?:dx\.)?doi\.org\/|(?:https?:\/\/)?doi:|(?<!\w))10\.\d{4,}\/[^\s]+/iu;
+// EMBEDDED_PMID_REGEX: requires the "PMID" label (colon or space form) to avoid
+// matching bare 8-digit numbers in page ranges, ISBNs, and phone numbers.
+const EMBEDDED_PMID_REGEX = /\bPMID[:\s]\s*(\d{1,8})\b/iu;
 const NCBI_CSL_API =
 	'https://api.ncbi.nlm.nih.gov/lit/ctxp/v1/pubmed/?format=csl&id=';
 const CROSSREF_CSL_API = 'https://api.crossref.org/works/';
@@ -117,6 +125,43 @@ export function normalizeDoiValueForLookup(value) {
 	return normalizeDoiInput(value)
 		.toLowerCase()
 		.replace(/^(?:https?:\/\/)?(?:dx\.)?doi\.org\//u, '');
+}
+
+/**
+ * Scan `chunk` for an embedded DOI or labeled PMID.
+ *
+ * DOI is preferred over PMID when both are present (DOI resolves via CrossRef
+ * and returns richer structured metadata). Only the first match is extracted —
+ * one citation, one identifier.
+ *
+ * @param {string} chunk Free-text citation string (already trimmed).
+ * @return {{ format: 'doi'|'pmid', value: string, rawValue: string } | null} Extracted identifier result, or null if none found.
+ */
+export function extractEmbeddedIdentifier(chunk) {
+	// DOI first — higher authority than PMID when both co-occur.
+	const doiMatch = chunk.match(EMBEDDED_DOI_REGEX);
+	if (doiMatch) {
+		return {
+			format: 'doi',
+			// Strip trailing punctuation (.,;:) and any doi: URL prefix via the
+			// existing normalizeDoiInput helper. Preserves the https://doi.org/ form.
+			value: normalizeDoiInput(doiMatch[0]),
+			rawValue: chunk,
+		};
+	}
+
+	// PMID second — label required to avoid false positives on bare numbers.
+	const pmidMatch = chunk.match(EMBEDDED_PMID_REGEX);
+	if (pmidMatch) {
+		return {
+			format: 'pmid',
+			// Normalized to the PMID:NNNN form that PARSER_BACKENDS.pmid expects.
+			value: `PMID:${pmidMatch[1]}`,
+			rawValue: chunk,
+		};
+	}
+
+	return null;
 }
 
 function cloneCslItems(cslItems) {

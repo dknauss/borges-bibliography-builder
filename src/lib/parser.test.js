@@ -17,6 +17,7 @@ import { Cite } from '@citation-js/core';
 import apiFetch from '@wordpress/api-fetch';
 import {
 	clearDoiMetadataCache,
+	extractEmbeddedIdentifier,
 	normalizeCrossRefCsl,
 	parsePastedInput,
 	validateAndSanitizeCsl,
@@ -1480,5 +1481,63 @@ describe('PMID fallback resolution', () => {
 		]);
 
 		window.fetch = originalFetch;
+	});
+});
+
+describe('extractEmbeddedIdentifier', () => {
+	it('extracts an embedded DOI from a full free-text citation string', () => {
+		const chunk =
+			'Author. Title. Journal 1 (2024): 1-10. https://doi.org/10.1234/abcd';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('doi');
+		expect(result.value).toMatch(/10\.1234\/abcd/);
+		expect(result.rawValue).toBe(chunk);
+	});
+
+	it('strips trailing sentence punctuation from an extracted DOI', () => {
+		const chunk =
+			'Author. Title. Journal 1 (2024): 1-10. https://doi.org/10.1234/abcd.';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('doi');
+		expect(result.value).not.toMatch(/\.$/);
+		expect(result.value).toMatch(/10\.1234\/abcd$/);
+		expect(result.rawValue).toBe(chunk);
+	});
+
+	it('extracts a labeled PMID from a free-text citation string', () => {
+		const chunk = 'Author. Title. PMID: 12345678';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('pmid');
+		expect(result.value).toBe('PMID:12345678');
+		expect(result.rawValue).toBe(chunk);
+	});
+
+	it('accepts "PMID 12345678" (space separator) as a valid PMID form', () => {
+		const chunk = 'Author. Title. Journal, 2020. PMID 12345678';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('pmid');
+		expect(result.value).toBe('PMID:12345678');
+		expect(result.rawValue).toBe(chunk);
+	});
+
+	it('returns null for a free-text string with no embedded identifier', () => {
+		const chunk = 'Smith, J. A History of Things. Boston: Beacon, 2019.';
+		expect(extractEmbeddedIdentifier(chunk)).toBeNull();
+	});
+
+	it('preserves rawValue as the original full input chunk', () => {
+		const chunk =
+			'Harris CR et al. Array programming. Nature. 2020. https://doi.org/10.1038/s41586-020-2649-2';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result.rawValue).toBe(chunk);
 	});
 });
