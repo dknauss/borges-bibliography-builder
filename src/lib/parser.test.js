@@ -1572,9 +1572,7 @@ describe('extractEmbeddedIdentifier', () => {
 	});
 
 	it('returns null for an 8-digit page range without PMID label', () => {
-		expect(
-			extractEmbeddedIdentifier('pp. 12345678-12345680')
-		).toBeNull();
+		expect(extractEmbeddedIdentifier('pp. 12345678-12345680')).toBeNull();
 	});
 
 	// DOI-over-PMID precedence
