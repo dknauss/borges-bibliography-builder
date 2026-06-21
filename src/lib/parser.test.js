@@ -17,6 +17,7 @@ import { Cite } from '@citation-js/core';
 import apiFetch from '@wordpress/api-fetch';
 import {
 	clearDoiMetadataCache,
+	extractEmbeddedIdentifier,
 	normalizeCrossRefCsl,
 	parsePastedInput,
 	validateAndSanitizeCsl,
@@ -927,12 +928,17 @@ Roy, Arundhati. The God of Small Things. Random House, 2008. Kindle.`);
 	});
 
 	it('parses free-text journal citations even when they include an inline DOI URL', async () => {
+		// Phase 7: embedded DOIs now trigger DOI resolution. When no fetchFn is
+		// provided, Cite.async is used and fails (mock returns undefined), so the
+		// graceful degradation falls back to the freetext heuristic parser.
+		Cite.async.mockReset();
+		clearDoiMetadataCache();
+
 		const result = await parsePastedInput(
 			'Ada Smith, "Learning Blocks," Journal of WordPress Studies 12, no. 3 (2024): 117-134. https://doi.org/10.1234/example-doi',
 			'apa-7'
 		);
 
-		expect(Cite.async).not.toHaveBeenCalled();
 		expect(result.errors).toEqual([]);
 		expect(result.entries).toHaveLength(1);
 		expect(result.entries[0]).toMatchObject({
@@ -963,6 +969,12 @@ Roy, Arundhati. The God of Small Things. Random House, 2008. Kindle.`);
 	});
 
 	it('parses APA-like journal citations with volume, issue, and DOI via heuristics', async () => {
+		// Phase 7: embedded DOI triggers DOI resolution. With no fetchFn and a
+		// reset Cite.async (returns undefined → throws), degradation falls back to
+		// the freetext heuristic parser which extracts the full citation metadata.
+		Cite.async.mockReset();
+		clearDoiMetadataCache();
+
 		const result = await parsePastedInput(
 			'King, B. G. (2025). Amy J. Binder and Jeffrey L. Kidder. The Channels of Student Activism: How the Left and Right Are Winning (and Losing) in Campus Politics Today BinderAmy J.KidderJeffrey L.The Channels of Student Activism: How the Left and Right Are Winning (and Losing) in Campus Politics Today. University of Chicago Press, 2022. 224 pp. $25, paper. Administrative Science Quarterly, 71(1). https://doi.org/10.1177/00018392251368878'
 		);
@@ -1113,6 +1125,11 @@ Ginsberg, J. P. (2009). The war comes home: Washington's battle against America'
 	});
 
 	it('parses APA journal citations with multiple authors and doi: URL form via heuristics', async () => {
+		// Phase 7: embedded DOI triggers DOI resolution attempt. With no fetchFn
+		// and a reset Cite.async, degradation falls back to the freetext parser.
+		Cite.async.mockReset();
+		clearDoiMetadataCache();
+
 		const result = await parsePastedInput(
 			'Ginsberg, J. P., Ayers, E., Burriss, L., & Powell, D. A. (2008). Discriminative delay Pavlovian eye-blink conditioning in veterans with and without post-traumatic stress disorder. Journal of Anxiety Disorders, 22, 809-823. https://doi:10.1016/j.janxdis.2007.08.009'
 		);
@@ -1205,6 +1222,11 @@ Ginsberg, J. P. (2009). The war comes home: Washington's battle against America'
 	});
 
 	it('parses sentence-style Chicago journal citations with or without an inline DOI', async () => {
+		// Phase 7: embedded DOI triggers DOI resolution attempt. Reset Cite.async
+		// so it throws and the degradation falls back to the freetext heuristic.
+		Cite.async.mockReset();
+		clearDoiMetadataCache();
+
 		const withDoi = await parsePastedInput(
 			'Dittmar, Emily L., and Douglas W. Schemske. “Temporal Variation in Selection Influences Microgeographic Local Adaptation.” American Naturalist 202, no. 4 (2023): 471–85. https://doi.org/10.1086/725865.'
 		);
@@ -1480,5 +1502,306 @@ describe('PMID fallback resolution', () => {
 		]);
 
 		window.fetch = originalFetch;
+	});
+});
+
+describe('extractEmbeddedIdentifier', () => {
+	it('extracts an embedded DOI from a full free-text citation string', () => {
+		const chunk =
+			'Author. Title. Journal 1 (2024): 1-10. https://doi.org/10.1234/abcd';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('doi');
+		expect(result.value).toMatch(/10\.1234\/abcd/);
+		expect(result.rawValue).toBe(chunk);
+	});
+
+	it('strips trailing sentence punctuation from an extracted DOI', () => {
+		const chunk =
+			'Author. Title. Journal 1 (2024): 1-10. https://doi.org/10.1234/abcd.';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('doi');
+		expect(result.value).not.toMatch(/\.$/);
+		expect(result.value).toMatch(/10\.1234\/abcd$/);
+		expect(result.rawValue).toBe(chunk);
+	});
+
+	it('extracts a labeled PMID from a free-text citation string', () => {
+		const chunk = 'Author. Title. PMID: 12345678';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('pmid');
+		expect(result.value).toBe('PMID:12345678');
+		expect(result.rawValue).toBe(chunk);
+	});
+
+	it('accepts "PMID 12345678" (space separator) as a valid PMID form', () => {
+		const chunk = 'Author. Title. Journal, 2020. PMID 12345678';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('pmid');
+		expect(result.value).toBe('PMID:12345678');
+		expect(result.rawValue).toBe(chunk);
+	});
+
+	it('returns null for a free-text string with no embedded identifier', () => {
+		const chunk = 'Smith, J. A History of Things. Boston: Beacon, 2019.';
+		expect(extractEmbeddedIdentifier(chunk)).toBeNull();
+	});
+
+	it('preserves rawValue as the original full input chunk', () => {
+		const chunk =
+			'Harris CR et al. Array programming. Nature. 2020. https://doi.org/10.1038/s41586-020-2649-2';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result.rawValue).toBe(chunk);
+	});
+
+	// DOI false-positive guards
+	it('returns null for "Chapter 10. Methodology" — no slash+path after 10.NNNN', () => {
+		expect(
+			extractEmbeddedIdentifier('Chapter 10. Methodology of the study.')
+		).toBeNull();
+	});
+
+	it('returns null for "Table 10.1 and Section 10.2.3" — decimal refs without DOI path', () => {
+		expect(
+			extractEmbeddedIdentifier(
+				'See Table 10.1 and Section 10.2.3 for detail.'
+			)
+		).toBeNull();
+	});
+
+	it('returns null for "Pages 10.1000" — 10.NNNN without a slash and path', () => {
+		expect(
+			extractEmbeddedIdentifier(
+				'Pages 10.1000 covered in the 2019 edition.'
+			)
+		).toBeNull();
+	});
+
+	// PMID false-positive guards
+	it('returns null for a bare 8-digit phone/support number without PMID label', () => {
+		expect(
+			extractEmbeddedIdentifier('Call 12345678 for support.')
+		).toBeNull();
+	});
+
+	it('returns null for an 8-digit page range without PMID label', () => {
+		expect(extractEmbeddedIdentifier('pp. 12345678-12345680')).toBeNull();
+	});
+
+	// DOI-over-PMID precedence
+	it('returns DOI when both a DOI and a labeled PMID are present in the same chunk', () => {
+		const chunk =
+			'Author. Title. https://doi.org/10.1234/abcd PMID: 12345678';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('doi');
+		expect(result.value).toMatch(/10\.1234\/abcd/);
+	});
+
+	// Full DOI path with special characters
+	it('captures a DOI path containing hyphens, underscores, and parentheses intact', () => {
+		const chunk =
+			'Harris CR et al. Nature 585 (2020): 357-362. https://doi.org/10.1038/s41586-020-2649-2';
+		const result = extractEmbeddedIdentifier(chunk);
+
+		expect(result).not.toBeNull();
+		expect(result.format).toBe('doi');
+		expect(result.value).toMatch(/10\.1038\/s41586-020-2649-2$/);
+	});
+});
+
+describe('parsePastedInput — embedded identifier resolution', () => {
+	const CROSSREF_SAMPLE_CSL = {
+		type: 'journal-article',
+		title: 'Array programming with NumPy',
+		DOI: '10.1234/abcd',
+		author: [{ given: 'Ada', family: 'Smith' }],
+		issued: { 'date-parts': [[2024, 1]] },
+	};
+
+	const PMID_SAMPLE_CSL = {
+		type: 'article-journal',
+		title: 'CRISPR–Cas9 for medical genetic screens',
+		'container-title': 'Journal of medical genetics',
+		author: [{ family: 'Xue', given: 'Hui-Ying' }],
+		issued: { 'date-parts': [[2016, 2]] },
+		DOI: '10.1136/jmedgenet-2015-103409',
+		PMID: '12345678',
+	};
+
+	function makeCrossRefFetchFn(status = 200, body = CROSSREF_SAMPLE_CSL) {
+		return jest.fn().mockResolvedValue({
+			ok: status >= 200 && status < 300,
+			status,
+			json: jest.fn().mockResolvedValue(body),
+		});
+	}
+
+	function makePmidFetchFn(status = 200, body = PMID_SAMPLE_CSL) {
+		return jest.fn().mockResolvedValue({
+			ok: status >= 200 && status < 300,
+			status,
+			json: jest.fn().mockResolvedValue(body),
+		});
+	}
+
+	beforeEach(() => {
+		clearDoiMetadataCache();
+	});
+
+	// Task 1: Route embedded DOI + PMID through existing backends
+	it('resolves an embedded DOI via CrossRef and returns inputFormat "doi"', async () => {
+		const fetchFn = makeCrossRefFetchFn();
+
+		const result = await parsePastedInput(
+			'Author. Title. Journal 1 (2024): 1-10. https://doi.org/10.1234/abcd',
+			'apa-7',
+			{ fetchFn }
+		);
+
+		expect(result.entries).toHaveLength(1);
+		expect(result.errors).toHaveLength(0);
+		expect(result.entries[0].inputFormat).toBe('doi');
+		expect(result.entries[0].csl.title).toBe(
+			'Array programming with NumPy'
+		);
+		expect(fetchFn).toHaveBeenCalledWith(
+			expect.stringContaining('api.crossref.org/works/')
+		);
+		expect(fetchFn.mock.calls[0][0]).toContain('10.1234%2Fabcd');
+	});
+
+	it('resolves an embedded PMID via the PMID backend and returns inputFormat "pmid"', async () => {
+		const fetchFn = makePmidFetchFn();
+
+		const result = await parsePastedInput(
+			'Author. Title. Journal, 2016. PMID: 12345678',
+			'apa',
+			{ fetchFn }
+		);
+
+		expect(result.entries).toHaveLength(1);
+		expect(result.errors).toHaveLength(0);
+		expect(result.entries[0].inputFormat).toBe('pmid');
+		expect(result.entries[0].csl.title).toBe(
+			'CRISPR–Cas9 for medical genetic screens'
+		);
+		expect(fetchFn).toHaveBeenCalledWith(
+			expect.stringContaining('api.ncbi.nlm.nih.gov')
+		);
+	});
+
+	it('resolves paragraph 1 via embedded DOI and falls through paragraph 2 as freetext', async () => {
+		const fetchFn = makeCrossRefFetchFn();
+
+		const result = await parsePastedInput(
+			'Author. Title. Journal 1 (2024): 1-10. https://doi.org/10.1234/abcd\n\nThis input is not a parseable citation at all.',
+			'apa-7',
+			{ fetchFn }
+		);
+
+		expect(result.entries).toHaveLength(1);
+		expect(result.entries[0].inputFormat).toBe('doi');
+		expect(result.errors).toHaveLength(1);
+		expect(result.remainingInput).toContain(
+			'This input is not a parseable citation at all.'
+		);
+	});
+
+	// Task 2: Graceful degradation
+	it('falls back to freetext when the embedded-DOI resolver returns a 404', async () => {
+		const fetchFn = makeCrossRefFetchFn(404);
+
+		// This citation can be parsed by the heuristic freetext parser.
+		const result = await parsePastedInput(
+			'Ada Smith, "Learning Blocks," Journal of WordPress Studies 12, no. 3 (2024): 117-134. https://doi.org/10.1234/abcd',
+			'apa-7',
+			{ fetchFn }
+		);
+
+		expect(result.errors).toHaveLength(0);
+		expect(result.entries).toHaveLength(1);
+		// Falls back to freetext — the freetext parser, not CrossRef, produces the entry.
+		expect(result.entries[0].inputFormat).toBe('freetext');
+		expect(result.entries[0].csl.title).toBe('Learning Blocks');
+	});
+
+	it('surfaces SUPPORTED_INPUT_MESSAGE and original string when both resolver and freetext fail', async () => {
+		const fetchFn = makeCrossRefFetchFn(404);
+		const FULL_CITATION =
+			'This input is not a parseable citation at all. https://doi.org/10.1234/abcd';
+
+		const result = await parsePastedInput(FULL_CITATION, 'apa-7', {
+			fetchFn,
+		});
+
+		expect(result.entries).toHaveLength(0);
+		expect(result.errors).toHaveLength(1);
+		expect(result.errors[0]).toContain('Paste a DOI');
+		expect(result.remainingInput).toBe(FULL_CITATION);
+	});
+
+	it('does not retry freetext for a bare-identifier DOI failure — keeps existing error path', async () => {
+		const fetchFn = makeCrossRefFetchFn(404);
+
+		const result = await parsePastedInput('10.1234/abcd', 'apa-7', {
+			fetchFn,
+		});
+
+		expect(result.entries).toHaveLength(0);
+		expect(result.errors).toHaveLength(1);
+		// Bare DOI gets the backend error, not the SUPPORTED_INPUT_MESSAGE.
+		expect(result.errors[0]).toMatch(/Couldn't parse the DOI/i);
+	});
+
+	// Task 3: Dedup parity + no-new-SSRF regression
+	it('deduplicates embedded DOI identically to a bare-DOI paste', async () => {
+		const fetchFn = makeCrossRefFetchFn();
+		// The normalized form that normalizeDoiValueForLookup produces for the embedded DOI.
+		const existingDoiValues = ['10.1234/abcd'];
+
+		const result = await parsePastedInput(
+			'Author. Title. Journal 1 (2024): 1-10. https://doi.org/10.1234/abcd',
+			'apa-7',
+			{ fetchFn, existingDoiValues }
+		);
+
+		expect(result.entries).toHaveLength(0);
+		expect(result.errors).toHaveLength(0);
+		expect(result.skippedDuplicateCount).toBe(1);
+		// fetchFn must NOT be called because the item was deduped before resolution.
+		expect(fetchFn).not.toHaveBeenCalled();
+	});
+
+	it('fetchFn is only called with CrossRef or NCBI fixed hosts — no arbitrary URL fetch', async () => {
+		const fetchFn = makeCrossRefFetchFn();
+
+		await parsePastedInput(
+			'Author. Title. Journal 1 (2024): 1-10. https://doi.org/10.1234/abcd',
+			'apa-7',
+			{ fetchFn }
+		);
+
+		// Every URL requested by fetchFn must start with a known fixed host.
+		const ALLOWED_HOSTS = [
+			'https://api.crossref.org/',
+			'https://api.ncbi.nlm.nih.gov/',
+		];
+
+		for (const [calledUrl] of fetchFn.mock.calls) {
+			const isAllowed = ALLOWED_HOSTS.some((host) =>
+				calledUrl.startsWith(host)
+			);
+			expect(isAllowed).toBe(true);
+		}
 	});
 });
