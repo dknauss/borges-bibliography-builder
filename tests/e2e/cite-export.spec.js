@@ -237,6 +237,12 @@ test('enabled Cite / Export renders per-entry panels with every export format on
 	await expect(panel).toBeVisible();
 	await expect(page.locator(CITE_EXPORT_PANEL)).toHaveCount(1);
 
+	// The panel is a <details> disclosure, collapsed by default — its contents
+	// are present but hidden until expanded. Open it (also verifies the
+	// disclosure works) before asserting on the button and links.
+	await panel.locator('summary').click();
+	await expect(panel).toHaveAttribute('open', '');
+
 	// Copy button is present with non-empty citation text for the clipboard.
 	const copyButton = panel.locator('.bibliography-builder-cite-copy');
 	await expect(copyButton).toBeVisible();
