@@ -15,3 +15,6 @@ artifacts/
 .tmp/
 .claude/
 *.log
+
+# Codex local agent config
+.codex/

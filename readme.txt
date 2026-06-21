@@ -9,27 +9,31 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Paste DOI, PubMed/PMID, BibTeX, or citations — get a formatted, auto-sorted bibliography in nine academic styles.
+Import, edit, sort, format, and export accessible bibliographies with DOI, PubMed, BibTeX, RIS, CSL-JSON, and manual entries.
 
 == Description ==
 
 Named for Jorge Luis Borges (1899–1986), the Argentine writer and librarian known for stories about infinite libraries, imaginary books, and labyrinths of knowledge, Borges Bibliography Builder brings order to scholarly references in WordPress.
 
-The **Borges Bibliography Builder** transforms pasted DOI(s), PubMed/PMID records, BibTeX entries, and citations into a semantically rich, auto-sorted reference list.
+The **Borges Bibliography Builder** transforms pasted DOI(s), PubMed/PMID records, BibTeX entries, and citations into a semantically rich, deduplicated, auto-sorted reference list.
 
-**One-click import.** Paste a DOI and CrossRef resolves the metadata instantly. Paste a PubMed/PMID identifier and Borges resolves it through an authenticated WordPress REST proxy to NCBI/PMC citation metadata. Paste BibTeX or formatted citations for books, articles, chapters, webpages, reviews, and theses.
+**One-click import.** Paste a DOI and Crossref resolves the metadata instantly. Paste a PubMed/PMID identifier and Borges resolves it through an authenticated WordPress REST proxy to NCBI/PMC citation metadata. Paste BibTeX or formatted citations for books, articles, chapters, webpages, reviews, and theses.
 
 **Nine citation styles.** Choose from Chicago Notes-Bibliography, Chicago Author-Date, APA 7, MLA 9, Harvard, Vancouver, IEEE, OSCOLA, and ABNT (Associação Brasileira de Normas Técnicas / NBR 6023:2018) — all with automatic sorting per style rules.
 
 **Portable.** Static HTML output survives plugin deactivation. No shortcodes. No database tables.
 
+**Accessible by default.** Semantic list markup, keyboard-operable editing and entry reordering (Alt+Arrow for numeric styles), visible focus, and optional Block Accessibility Checks integration help your bibliographies meet accessibility expectations.
+
 **Reference-manager friendly.** Export and reuse your bibliography in common research workflows. Borges supports CSL-JSON, BibTeX, BibLaTeX, RIS, DOI links, JSON-LD, and optional COinS metadata for compatibility with tools such as Zotero, Mendeley, EndNote, JabRef, BibDesk, and other citation managers.
+
+**Reader-facing cite & export.** Optionally add a per-entry Cite / Export panel to the published bibliography: a static, JavaScript-free disclosure under each entry with the citation text and one-click downloads in RIS, CSL-JSON, BibTeX, and BibLaTeX. Off by default; enable it per block.
 
 **Try it first.** Launch a disposable demo in [WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/dknauss/Borges/main/playground/blueprint.json) before installing it on your site.
 
 **Translation-ready.** Plugin interface strings use the `borges-bibliography-builder` text domain, and official WordPress.org language packs are generated as community translations are approved on translate.wordpress.org.
 
-**Support development.** If Borges saves you time, you can [sponsor Dan Knauss on GitHub](https://github.com/sponsors/dknauss) to support ongoing maintenance.
+**Support development.** If Borges saves you time by bringing order to your citations and joy to your heart, you can [sponsor the author](https://github.com/sponsors/dknauss) to support ongoing maintenance.
 
 == Installation ==
 
@@ -48,7 +52,7 @@ The package includes seed PO/MO files for translator review and import in French
 
 = What citation input formats does the Borges Bibliography Builder support? =
 
-Bare DOIs, DOI URLs, PubMed/PMID identifiers, BibTeX entries, and supported formatted citations for books, articles, chapters, webpages, reviews, and theses/dissertations. You can paste multiple entries at once, up to 50 entries per add.
+Bare DOIs, DOI URLs, PubMed/PMID identifiers, BibTeX entries, and supported formatted citations for books, articles, chapters, webpages, reviews, and theses/dissertations. You can paste multiple entries at once, up to 50 per paste, and each bibliography holds up to 200 citations in total.
 
 = Does the ABNT style implement NBR 6023:2018? =
 
@@ -57,6 +61,10 @@ Yes. The ABNT option targets Associação Brasileira de Normas Técnicas bibliog
 = What happens if I deactivate the Borges Bibliography Builder? =
 
 Your bibliographies remain fully readable. The block uses static HTML output, so all formatted citations stay in your post content.
+
+= What happens if I delete the Borges Bibliography Builder? =
+
+Your bibliographies stay in your posts — they are saved as static HTML, not in a database table the plugin owns. When you delete the plugin, Borges removes only its own cached lookup data (transient and object-cache entries) and leaves your content untouched.
 
 = Does the Borges Bibliography Builder work with Zotero, Mendeley, EndNote, and other citation managers? =
 
@@ -68,7 +76,7 @@ Enable CSL-JSON if you want your bibliography data to be reusable by scholarly t
 
 = Can I export the bibliography data? =
 
-Yes. The editor currently includes Download CSL-JSON, Download BibTeX, Download BibLaTeX, Download RIS, per-entry Copy citation, and Copy bibliography actions for exporting or reusing bibliography data.
+Yes. In the editor you can download the whole bibliography as CSL-JSON, BibTeX, BibLaTeX, or RIS, copy any single citation, or copy the full bibliography as plain text. You can also enable a per-entry Cite / Export panel that places the same RIS, CSL-JSON, BibTeX, and BibLaTeX downloads — plus the citation text — directly on the published page for your readers. The reader-facing panel is static and JavaScript-free and is off by default.
 
 = Can I access bibliography data via API? =
 
@@ -76,7 +84,7 @@ Yes. The plugin exposes read-only REST endpoints at `/wp-json/bibliography/v1/po
 
 = Does the Borges Bibliography Builder work on WordPress Multisite? =
 
-Yes. CI includes a Multisite runtime smoke lane with network activation. If you encounter issues on a specific network configuration, please report them.
+Yes. Borges works on WordPress Multisite, including network activation. If you encounter issues on a specific network configuration, please report them.
 
 = What PHP and WordPress versions are supported? =
 
@@ -87,7 +95,7 @@ PHP 7.4+ and WordPress 6.4+. Borges Bibliography Builder is tested up to WordPre
 1. Front-end bibliography output with hanging indents, italic titles, and linked DOIs, styled by the active theme.
 2. Editor view showing a formatted bibliography; hover any entry to reveal copy, edit, and delete actions.
 3. Discover the Bibliography block in the block inserter by searching for "Bibliography."
-4. Paste DOIs, PubMed/PMID identifiers, BibTeX entries, or supported citation text into the import form; the sidebar controls citation style, visible heading, and metadata output (JSON-LD, COinS, CSL-JSON).
+4. Paste DOIs, PubMed/PMID identifiers, BibTeX entries, or supported citation text into the import form; the sidebar controls citation style, visible heading, and metadata output (JSON-LD, COinS, CSL-JSON, and an optional per-entry Cite / Export panel).
 5. Switch to Manual Entry to build a citation field by field — Publication Type, Author, Title, Container, Publisher, Year, Pages, DOI, and URL.
 
 == Known Limitations ==
@@ -108,12 +116,12 @@ This plugin connects to fixed scholarly metadata services only when you explicit
 
 **DOI metadata**
 
-DOI input connects to the **CrossRef REST API** (https://api.crossref.org/) to resolve citation metadata.
+DOI input connects to the **Crossref REST API** (https://api.crossref.org/) to resolve citation metadata.
 
-* CrossRef service: https://www.crossref.org/
-* CrossRef REST API documentation: https://api.crossref.org/swagger-ui/index.html
-* CrossRef privacy policy: https://www.crossref.org/privacy/
-* CrossRef terms of service: https://www.crossref.org/terms/
+* Crossref service: https://www.crossref.org/
+* Crossref REST API documentation: https://api.crossref.org/swagger-ui/index.html
+* Crossref privacy policy: https://www.crossref.org/privacy/
+* Crossref terms of service: https://www.crossref.org/terms/
 
 **PubMed/PMID metadata**
 
@@ -125,15 +133,18 @@ PubMed/PMID input connects through the plugin's authenticated WordPress REST pro
 
 == Changelog ==
 
+= 1.4.1 =
+* Clean up after the plugin when it is deleted: uninstalling now removes the plugin's cached data — the formatter and PubMed/PMID transients (across all sites on multisite) and its object-cache groups where the host supports it. Bibliography blocks already saved in your posts are left untouched.
+
 = 1.4.0 =
 * Add optional per-entry Cite / Export affordances to the public bibliography: a static, no-JS `<details>` disclosure panel under each entry with the citation text and one-click downloads for RIS, CSL-JSON, BibTeX, and BibLaTeX. Enable it per block with the new "Per-entry Cite / Export" toggle in the Metadata output panel; off by default.
-* Pre-compute BibTeX and BibLaTeX export data in the editor so the frontend downloads work without activating the plugin, and derive readable download filenames from each citation (for example, watson1953.ris).
+* Pre-compute BibTeX and BibLaTeX export data in the editor so the front-end downloads work without activating the plugin, and derive readable download filenames from each citation (for example, watson1953.ris).
 * Only pre-compute export data when the feature is enabled, so bibliographies that do not use Cite / Export incur no extra editor work.
 * Use a secure-context-safe helper for generating citation and bibliography IDs.
 * Remove a dead, never-loaded duplicate of the PMID resolver (includes/pmid.php) to eliminate a function-redeclare risk.
-* Fix DOI imports for works CrossRef labels with a non-standard type such as "monograph" (common for university-press books), which previously failed to import; unrecognized types now map to a sensible CSL type or fall back gracefully instead of aborting the import.
+* Fix DOI imports for works that Crossref labels with a non-standard type such as "monograph" (common for university-press books), which previously failed to import; unrecognized types now map to a sensible CSL type or fall back gracefully instead of aborting the import.
 * Fix the default Chicago Notes-Bibliography style (and OSCOLA and MLA) dropping the publication year on every entry; those styles used an issued-date form the formatter does not render. All bundled styles now show the year, guarded by a regression test.
-* Title-case author names and titles that CrossRef or PubMed return in ALL CAPS (e.g. "TURING" / "I.—COMPUTING MACHINERY AND INTELLIGENCE") so they no longer render shouting; already-cased text, initials, organizations, and non-Latin scripts are left untouched.
+* Title-case author names and titles that Crossref or PubMed return in ALL CAPS (e.g. "TURING" / "I.—COMPUTING MACHINERY AND INTELLIGENCE") so they no longer render shouting; already-cased text, initials, organizations, and non-Latin scripts are left untouched.
 
 = 1.3.4 =
 * Refresh the translation template and 19 seed PO/MO locale pairs from current source strings.
@@ -142,8 +153,8 @@ PubMed/PMID input connects through the plugin's authenticated WordPress REST pro
 * Update docs for the current maintenance state and archive historical planning notes out of active paths.
 
 = 1.3.3 =
-* Restore DOI imports in browser-based WordPress Playground by resolving DOI metadata through CrossRef's CORS-friendly CSL transform endpoint.
-* Serialize DOI lookups to respect CrossRef's public concurrency limit when multiple DOIs are pasted together.
+* Restore DOI imports in browser-based WordPress Playground by resolving DOI metadata through Crossref's CORS-friendly CSL transform endpoint.
+* Serialize DOI lookups to respect Crossref's public concurrency limit when multiple DOIs are pasted together.
 * Add a PubMed/PMID sample to the Playground starter content alongside DOI and BibTeX examples.
 
 = 1.3.2 =
@@ -202,7 +213,7 @@ PubMed/PMID input connects through the plugin's authenticated WordPress REST pro
 * Output Schema.org JSON-LD by default, with optional COinS and CSL-JSON metadata layers.
 * Export CSL-JSON, UTF-8 BibTeX, and RIS; copy individual citations or the full bibliography as plain text.
 * Preserve Unicode quotation marks in BibTeX exports for Zotero, Mendeley, and other citation-manager imports.
-* Provide reference-manager friendly metadata and exports for Zotero, Mendeley, EndNote, JabRef, BibDesk, LaTeX, and CSL/citeproc workflows.
+* Provide reference-manager-friendly metadata and exports for Zotero, Mendeley, EndNote, JabRef, BibDesk, LaTeX, and CSL/citeproc workflows.
 * Improve accessibility with keyboard navigation, visible focus, block-local notices, semantic bibliography markup, and no deprecated bibliography-entry ARIA role in newly saved output.
 * Provide read-only REST API endpoints for programmatic bibliography access.
 * Bundle seed interface locale files for translator review/import while using WordPress.org language packs as the canonical availability signal.
