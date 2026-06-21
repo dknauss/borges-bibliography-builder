@@ -1,6 +1,6 @@
 # Project State
 
-_Last reviewed: 2026-06-21. Phase 07 Plan 01 complete._
+_Last reviewed: 2026-06-21. Phase 07 Plan 02 complete._
 
 ## Current Focus
 
@@ -56,6 +56,14 @@ _Last reviewed: 2026-06-21. Phase 07 Plan 01 complete._
 
 ## Last Activity
 
+- Phase 07 Plan 02 complete (2026-06-21): Wired `extractEmbeddedIdentifier` into `detectFormat` routing
+  embedded DOIs/PMIDs through CrossRef/NCBI backends. Added graceful degradation: resolver fail -> freetext
+  -> SUPPORTED_INPUT_MESSAGE. Dedup path unchanged — embedded DOI items flow through existing existingDoiSet
+  filter. 8 new integration tests; 4 existing freetext tests updated to reflect new resolver-then-freetext
+  degradation flow. All 670 Jest tests pass.
+  Commits: `c9b5539` (feat, Tasks 1+2), `6d70138` (test, Task 3).
+  Key decisions: Tasks 1+2 committed together (pre-commit gate requires green suite); SUPPORTED_INPUT_MESSAGE
+  (not DOI error) on double failure; fallbackValue field carries original chunk through item reconstruction.
 - Phase 07 Plan 01 complete (2026-06-21): Added `extractEmbeddedIdentifier()` helper and two unanchored
   regexes (`EMBEDDED_DOI_REGEX`, `EMBEDDED_PMID_REGEX`) to `src/lib/parser.js`. Exported for direct unit
   test access. 13 unit tests cover extraction, false-positive guards, and DOI-over-PMID precedence.
