@@ -26,15 +26,25 @@ Install the public release from [WordPress.org](https://wordpress.org/plugins/bo
 
 ## Screenshots
 
-| Front-end output | Editor with citations |
+| Front-end output | Block inserter |
 |---|---|
 | ![](.wordpress-org/screenshot-1.png) | ![](.wordpress-org/screenshot-2.png) |
-| The rendered bibliography on the site front end with hanging indents, italic titles, and linked DOIs — all styled by the active theme. | The block in editor view showing a formatted bibliography. Hover over any entry to reveal copy, edit, and delete actions. |
+| The rendered bibliography on the site front end with hanging indents, italic titles, and linked DOIs — all styled by the active theme. | Discover the Bibliography block in the block inserter by searching for "Bibliography." |
 
-| Block inserter | Empty-state form | Manual entry |
+| Import form | Manual entry | Structured field editor |
 |---|---|---|
 | ![](.wordpress-org/screenshot-3.png) | ![](.wordpress-org/screenshot-4.png) | ![](.wordpress-org/screenshot-5.png) |
-| Discover the Bibliography block in the block inserter by searching for "Bibliography." | Paste DOIs, PubMed/PMID identifiers, BibTeX entries, or supported citation text into the import form. The sidebar controls citation style, visible heading, and metadata output (JSON-LD, COinS, CSL-JSON). | Switch to Manual Entry to build a citation field by field: Publication Type, Author, Title, Container, Publisher, Year, Pages, DOI, and URL. These fields will be automatically populated from DOIs, PubMed/PMID records, and pasted input that can be parsed. |
+| Paste DOIs, PubMed/PMID identifiers, BibTeX, RIS, CSL-JSON, or free-text citations into the import form. Hover any entry to reveal copy, edit, and delete actions. | Switch to Manual Entry to build a citation field by field: Publication Type, Author, Title, Container, Publisher, Year, Pages, DOI, and URL. These fields are populated automatically from DOIs, PubMed/PMID records, and any pasted input that can be parsed. | Correct imported or free-text citations in place with the structured field editor — fix individual fields without retyping the whole entry. |
+
+| Numeric reorder | Settings sidebar | Exports |
+|---|---|---|
+| ![](.wordpress-org/screenshot-6.png) | ![](.wordpress-org/screenshot-7.png) | ![](.wordpress-org/screenshot-8.png) |
+| For numbered styles such as IEEE and Vancouver, reorder entries with the up and down controls (or Alt+Arrow keys) to set citation numbering. | Choose the citation style and visible heading and toggle metadata output — JSON-LD, COinS, CSL-JSON, and the per-entry Cite / Export panel — from the block settings sidebar. | Export the whole bibliography from the sidebar: copy as plain text, or download CSL-JSON, BibTeX, BibLaTeX, or RIS. |
+
+| Reader Cite / Export |
+|---|
+| ![](.wordpress-org/screenshot-9.png) |
+| Readers can expand the per-entry Cite / Export panel on the published page to copy a citation or download it as RIS, CSL-JSON, BibTeX, or BibLaTeX. |
 
 ## Installation
 
