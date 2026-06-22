@@ -3,6 +3,20 @@
  * Capture fresh screenshots for the WordPress plugin directory and GitHub README.
  *
  * Usage: PLAYWRIGHT_BASE_URL=http://127.0.0.1:9401 node scripts/capture-screenshots.js
+ *
+ * The gallery is ordered as a narrative (see readme.txt `== Screenshots ==`):
+ *   1  Front-end rendered bibliography (the payoff)
+ *   2  Block inserter (discovery)
+ *   3  Paste / Import form with imported citations + hover actions
+ *   4  Manual Entry form
+ *   5  Structured field editor (fixing an imported / free-text entry in place)
+ *   6  Numeric reorder controls (IEEE / Vancouver)
+ *   7  Block settings sidebar (style, heading, metadata toggles)
+ *   8  Exports panel (copy + downloads)
+ *   9  Front-end per-entry Cite / Export panel (reader-facing)
+ *
+ * Capture happens in an efficient editor-driven order; each shot is written to
+ * its narrative-numbered file regardless of when it is taken.
  */
 
 const { chromium } = require('playwright');
@@ -43,6 +57,16 @@ const SAMPLE_BIBTEX = [
 	'}',
 ].join('\n');
 
+// A deliberately untagged, identifier-free reference. The free-text parser
+// imports it heuristically (inputFormat 'freetext'), which is what surfaces the
+// structured-field "Edit fields" affordance used for screenshot 5.
+const SAMPLE_FREETEXT =
+	'Doe, Jane. "A Note on Untagged References Without Identifiers." Journal of Worked Examples, vol. 4, 2021, pp. 10-20.';
+
+function shot(name) {
+	return `${OUTPUT_DIR}/${name}`;
+}
+
 async function dismissEditorOverlay(page) {
 	for (let attempt = 0; attempt < 5; attempt++) {
 		const dialog = page.getByRole('dialog').first();
@@ -72,6 +96,23 @@ async function dismissEditorOverlay(page) {
 	}
 }
 
+// Close any open WordPress modal (e.g. the Welcome Guide) by clicking its close
+// button. Unlike pressing Escape, this does not also close an open inserter.
+async function closeAnyModal(page) {
+	const overlay = page.locator('.components-modal__screen-overlay');
+	if (!(await overlay.count())) return;
+	const close = overlay
+		.getByRole('button', { name: /Close|Got it|Dismiss/i })
+		.first();
+	if (await close.isVisible().catch(() => false)) {
+		await close.click({ force: true });
+		await overlay
+			.first()
+			.waitFor({ state: 'hidden', timeout: 3000 })
+			.catch(() => {});
+	}
+}
+
 async function ensurePluginActive(page) {
 	await page.goto(`${BASE_URL}/wp-admin/plugins.php`);
 	await page.waitForLoadState('networkidle');
@@ -83,6 +124,56 @@ async function ensurePluginActive(page) {
 	}
 }
 
+// Open the block settings sidebar and select its Block tab so the Settings and
+// Exports panels (and their controls) are present.
+async function openBlockSidebar(page) {
+	const settingsButton = page
+		.getByRole('button', { name: /^Settings$/i })
+		.first();
+	if (await settingsButton.isVisible().catch(() => false)) {
+		// Only click when the sidebar is closed (button is a toggle).
+		const pressed = await settingsButton
+			.getAttribute('aria-pressed')
+			.catch(() => null);
+		if (pressed !== 'true') {
+			await settingsButton.click();
+			await page.waitForTimeout(400);
+		}
+	}
+
+	const blockTab = page.getByRole('tab', { name: /^Block$/i }).first();
+	if (await blockTab.isVisible().catch(() => false)) {
+		await blockTab.click();
+		await page.waitForTimeout(400);
+	}
+}
+
+// Pick a citation style from the sidebar SelectControl (native <select>).
+async function selectStyle(page, value) {
+	const styleSelect = page
+		.getByRole('combobox', { name: /Citation Style/i })
+		.first();
+	if (await styleSelect.isVisible().catch(() => false)) {
+		await styleSelect.selectOption(value).catch(() => {});
+		await page.waitForTimeout(1500);
+	}
+}
+
+async function addCitations(page, editorFrame, text) {
+	const textarea = editorFrame.locator('textarea').first();
+	await textarea.waitFor({ state: 'visible', timeout: 5000 });
+	await textarea.fill(text);
+	await page.waitForTimeout(400);
+
+	const addButton = editorFrame
+		.locator(
+			'button:has-text("Add"), button:has-text("Parse"), button:has-text("Import")'
+		)
+		.first();
+	await addButton.click();
+	await page.waitForTimeout(3000);
+}
+
 (async () => {
 	const browser = await chromium.launch();
 	const context = await browser.newContext({
@@ -92,22 +183,35 @@ async function ensurePluginActive(page) {
 
 	await ensurePluginActive(page);
 
-	// Navigate to new post.
+	// Navigate to a new post.
 	await page.goto(`${BASE_URL}/wp-admin/post-new.php`);
 	const editorFrame = page.frameLocator(
 		'iframe[name="editor-canvas"], iframe'
 	);
 	await dismissEditorOverlay(page);
+	// Proactively disable the Welcome Guide so its modal does not pop in mid-flow.
+	await page
+		.evaluate(() => {
+			try {
+				window.wp?.data
+					?.dispatch('core/preferences')
+					?.set('core/edit-post', 'welcomeGuide', false);
+				window.wp?.data
+					?.dispatch('core/preferences')
+					?.set('core', 'welcomeGuide', false);
+			} catch (e) {
+				// Older/newer editors may expose a different store; ignore.
+			}
+		})
+		.catch(() => {});
 	await editorFrame
 		.getByRole('textbox', { name: /Add title/i })
 		.waitFor({ state: 'visible', timeout: 15000 });
-
-	// Set a title.
 	await editorFrame
 		.getByRole('textbox', { name: /Add title/i })
 		.fill('Sample Bibliography');
 
-	// --- Screenshot 1: Block in the inserter ---
+	// --- Screenshot 2: Bibliography block in the inserter ---
 	await page
 		.getByRole('button', {
 			name: /Block Inserter|Toggle block inserter/i,
@@ -121,53 +225,46 @@ async function ensurePluginActive(page) {
 		.first();
 	await inserterSearch.waitFor({ state: 'visible' });
 	await inserterSearch.fill('Bibliography');
-	// Wait for results to fully load.
 	const blockOption = page
 		.locator('.block-editor-block-types-list__item')
 		.filter({ hasText: 'Bibliography' })
 		.first();
 	await blockOption.waitFor({ state: 'visible', timeout: 10000 });
 	await page.waitForTimeout(500);
-	await page.screenshot({ path: `${OUTPUT_DIR}/screenshot-1.png` });
-	console.log('Screenshot 1: Block inserter');
+	await page.screenshot({ path: shot('screenshot-2.png') });
+	console.log('Screenshot 2: Block inserter');
 
-	// Insert the block.
+	// Insert the block, then close the inserter panel. Dismiss any late modal
+	// (Welcome Guide) first so it cannot intercept the click.
+	await closeAnyModal(page);
 	await blockOption.scrollIntoViewIfNeeded();
 	await blockOption.click();
 	await page.waitForTimeout(2000);
-
-	// Close the inserter panel.
 	const closeInserter = page
-		.getByRole('button', {
-			name: /Block Inserter|Toggle block inserter/i,
-		})
+		.getByRole('button', { name: /Block Inserter|Toggle block inserter/i })
 		.first();
 	if (await closeInserter.isVisible().catch(() => false)) {
 		await closeInserter.click();
 		await page.waitForTimeout(500);
 	}
 
-	// --- Screenshot 2: Empty paste/import form ---
-	await page.screenshot({ path: `${OUTPUT_DIR}/screenshot-2.png` });
-	console.log('Screenshot 2: Paste/import form (empty state)');
+	// Import a realistic mix: three BibTeX records plus one untagged free-text
+	// reference (the latter is what enables the structured field editor).
+	await addCitations(page, editorFrame, SAMPLE_BIBTEX);
+	await addCitations(page, editorFrame, SAMPLE_FREETEXT);
 
-	// Paste BibTeX and add citations.
-	const textarea = editorFrame.locator('textarea').first();
-	await textarea.waitFor({ state: 'visible', timeout: 5000 });
-	await textarea.fill(SAMPLE_BIBTEX);
-	await page.waitForTimeout(500);
-
-	const addButton = editorFrame
-		.locator(
-			'button:has-text("Add"), button:has-text("Parse"), button:has-text("Import")'
-		)
+	// --- Screenshot 3: Import form populated, with hover actions revealed ---
+	const firstEntry = editorFrame
+		.locator('.bibliography-builder-entry, li')
 		.first();
-	await addButton.click();
-	// Wait for citations to be parsed and rendered.
-	await page.waitForTimeout(4000);
+	if (await firstEntry.isVisible().catch(() => false)) {
+		await firstEntry.hover();
+		await page.waitForTimeout(400);
+	}
+	await page.screenshot({ path: shot('screenshot-3.png') });
+	console.log('Screenshot 3: Import form with citations and hover actions');
 
-	// --- Screenshot 3: Editor with populated citations and manual entry form ---
-	// Switch to manual entry via the block toolbar button.
+	// --- Screenshot 4: Manual Entry form ---
 	const manualTab = page
 		.getByRole('button', { name: /Manual Entry/i })
 		.first();
@@ -175,10 +272,10 @@ async function ensurePluginActive(page) {
 		await manualTab.click();
 		await page.waitForTimeout(1000);
 	}
-	await page.screenshot({ path: `${OUTPUT_DIR}/screenshot-3.png` });
-	console.log('Screenshot 3: Manual entry form with existing citations');
+	await page.screenshot({ path: shot('screenshot-4.png') });
+	console.log('Screenshot 4: Manual Entry form');
 
-	// Switch back to paste/import via the block toolbar button.
+	// Back to the paste/import mode for the in-list editing shots.
 	const pasteTab = page
 		.getByRole('button', { name: /Paste.*Import/i })
 		.first();
@@ -187,51 +284,112 @@ async function ensurePluginActive(page) {
 		await page.waitForTimeout(500);
 	}
 
-	// --- Screenshot 4: Block settings sidebar ---
-	// Open the settings panel (right sidebar).
-	const settingsButton = page
-		.getByRole('button', { name: /^Settings$/i })
+	// --- Screenshot 5: Structured field editor (in place) ---
+	// The free-text entry exposes an "Edit fields for …" button on hover.
+	const freetextEntry = editorFrame
+		.locator('.bibliography-builder-entry, li')
+		.filter({ hasText: /Untagged References/i })
 		.first();
-	if (await settingsButton.isVisible().catch(() => false)) {
-		await settingsButton.click();
-		await page.waitForTimeout(500);
-	}
-
-	// Switch to Block tab in the settings sidebar.
-	const blockTab = page.locator(
-		'.edit-post-sidebar__panel-tabs button, [aria-label="Block"]'
-	);
-	for (let i = 0; i < (await blockTab.count()); i++) {
-		const text = await blockTab.nth(i).textContent();
-		if (/block/i.test(text)) {
-			await blockTab.nth(i).click();
+	if (await freetextEntry.isVisible().catch(() => false)) {
+		await freetextEntry.scrollIntoViewIfNeeded();
+		await freetextEntry.hover();
+		await page.waitForTimeout(300);
+		const editFields = freetextEntry
+			.getByRole('button', { name: /Edit fields for/i })
+			.first();
+		if (await editFields.isVisible().catch(() => false)) {
+			await editFields.click();
+			await editorFrame
+				.locator('.bibliography-builder-structured-edit')
+				.first()
+				.waitFor({ state: 'visible', timeout: 5000 })
+				.catch(() => {});
 			await page.waitForTimeout(500);
-			break;
+			await page.screenshot({ path: shot('screenshot-5.png') });
+			console.log('Screenshot 5: Structured field editor');
+			// Close the editor without saving.
+			const cancelBtn = editorFrame
+				.getByRole('button', { name: /^Cancel$/i })
+				.first();
+			if (await cancelBtn.isVisible().catch(() => false)) {
+				await cancelBtn.click();
+				await page.waitForTimeout(400);
+			}
+		} else {
+			console.warn(
+				'Screenshot 5 SKIPPED: structured-edit affordance not found'
+			);
 		}
 	}
 
-	// Hover over a citation entry to reveal the action icons.
-	const entryTrigger = editorFrame
-		.locator('.bibliography-builder-entry-trigger')
+	// Open the sidebar (needed for style selection and toggles).
+	await openBlockSidebar(page);
+
+	// --- Screenshot 6: Numeric reorder controls (IEEE) ---
+	await selectStyle(page, 'ieee');
+	const reorderEntry = editorFrame
+		.locator('.bibliography-builder-entry, li')
 		.first();
-	if (await entryTrigger.isVisible().catch(() => false)) {
-		await entryTrigger.hover();
-		await page.waitForTimeout(500);
+	if (await reorderEntry.isVisible().catch(() => false)) {
+		await reorderEntry.scrollIntoViewIfNeeded();
+		await reorderEntry.hover();
+		await page.waitForTimeout(400);
+		const moveBtn = editorFrame
+			.getByRole('button', { name: /Move .* (up|down)/i })
+			.first();
+		await moveBtn
+			.waitFor({ state: 'visible', timeout: 4000 })
+			.catch(() =>
+				console.warn('Screenshot 6: reorder buttons not visible')
+			);
+		await page.screenshot({ path: shot('screenshot-6.png') });
+		console.log('Screenshot 6: Numeric reorder controls (IEEE)');
 	}
 
-	await page.screenshot({ path: `${OUTPUT_DIR}/screenshot-4.png` });
-	console.log(
-		'Screenshot 4: Block settings sidebar with citations and hover actions'
-	);
+	// Return to the default style for the configuration and front-end shots.
+	await selectStyle(page, 'chicago-notes-bibliography');
 
-	// --- Publish the post ---
+	// --- Screenshot 7: Block settings sidebar ---
+	// Enable the per-entry Cite / Export panel (also needed for the front-end
+	// shot) and capture the full settings panel.
+	const citeToggle = page
+		.getByRole('checkbox', { name: /Per-entry Cite \/ Export/i })
+		.first();
+	if (await citeToggle.isVisible().catch(() => false)) {
+		await citeToggle.check().catch(() => {});
+		await page.waitForTimeout(500);
+	}
+	// Reveal hover actions on an entry for visual context.
+	const settingsEntry = editorFrame
+		.locator('.bibliography-builder-entry, li')
+		.first();
+	if (await settingsEntry.isVisible().catch(() => false)) {
+		await settingsEntry.hover();
+		await page.waitForTimeout(300);
+	}
+	await page.screenshot({ path: shot('screenshot-7.png') });
+	console.log('Screenshot 7: Block settings sidebar');
+
+	// --- Screenshot 8: Exports panel ---
+	const copyBibliography = page
+		.getByRole('button', { name: /Copy bibliography/i })
+		.first();
+	if (await copyBibliography.isVisible().catch(() => false)) {
+		await copyBibliography.scrollIntoViewIfNeeded();
+		await page.waitForTimeout(400);
+		await page.screenshot({ path: shot('screenshot-8.png') });
+		console.log('Screenshot 8: Exports panel');
+	} else {
+		console.warn('Screenshot 8 SKIPPED: Exports panel not found');
+	}
+
+	// --- Publish for the front-end shots ---
 	const publishButton = page
 		.getByRole('button', { name: /^Publish$/i })
 		.first();
 	await publishButton.click();
 	await page.waitForTimeout(1500);
 
-	// Handle the confirmation panel.
 	const confirmPublish = page.locator(
 		'.editor-post-publish-panel__header-publish-button button, button.editor-post-publish-button'
 	);
@@ -244,9 +402,9 @@ async function ensurePluginActive(page) {
 	}
 	await page.waitForTimeout(3000);
 
-	// Find the view post link.
-	const viewLinks = page.locator('a');
+	// Resolve the published post URL.
 	let postUrl = null;
+	const viewLinks = page.locator('a');
 	const viewCount = await viewLinks.count();
 	for (let i = 0; i < viewCount; i++) {
 		const text = await viewLinks
@@ -264,8 +422,6 @@ async function ensurePluginActive(page) {
 			break;
 		}
 	}
-
-	// Fallback: find the post via the REST API.
 	if (!postUrl) {
 		await page.goto(`${BASE_URL}/wp-json/wp/v2/posts?per_page=1`);
 		const responseText = await page.locator('body').textContent();
@@ -279,21 +435,33 @@ async function ensurePluginActive(page) {
 		}
 	}
 
-	// --- Screenshot 5: Front-end rendered bibliography ---
-	if (postUrl) {
-		await page.goto(postUrl);
-		await page.waitForLoadState('networkidle');
-		await page.waitForTimeout(1000);
-		await page.screenshot({ path: `${OUTPUT_DIR}/screenshot-5.png` });
-		console.log('Screenshot 5: Front-end bibliography');
+	// --- Screenshot 1: Front-end rendered bibliography (the hero shot) ---
+	await page.goto(postUrl || BASE_URL);
+	await page.waitForLoadState('networkidle');
+	await page.waitForTimeout(1000);
+	await page.screenshot({ path: shot('screenshot-1.png') });
+	console.log(
+		postUrl
+			? 'Screenshot 1: Front-end bibliography'
+			: 'Screenshot 1: Homepage (could not resolve published post URL)'
+	);
+
+	// --- Screenshot 9: Front-end Cite / Export panel (expanded) ---
+	const citeExport = page
+		.locator('.bibliography-builder-cite-export')
+		.first();
+	if (await citeExport.isVisible().catch(() => false)) {
+		await citeExport.scrollIntoViewIfNeeded();
+		const summary = citeExport.locator('summary').first();
+		if (await summary.isVisible().catch(() => false)) {
+			await summary.click();
+			await page.waitForTimeout(600);
+		}
+		await page.screenshot({ path: shot('screenshot-9.png') });
+		console.log('Screenshot 9: Front-end Cite / Export panel');
 	} else {
-		// Last resort: go to the site homepage.
-		await page.goto(BASE_URL);
-		await page.waitForLoadState('networkidle');
-		await page.waitForTimeout(1000);
-		await page.screenshot({ path: `${OUTPUT_DIR}/screenshot-5.png` });
-		console.log(
-			'Screenshot 5: Homepage (could not find published post URL)'
+		console.warn(
+			'Screenshot 9 SKIPPED: front-end Cite / Export panel not found'
 		);
 	}
 
